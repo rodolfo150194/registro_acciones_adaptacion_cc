@@ -1,0 +1,302 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+{% block content %}
+    <div class="card mb-5 mb-xl-10">
+        <div class="card-body pt-9 pb-0">
+            <div class="d-flex flex-wrap flex-sm-nowrap">
+                <!--begin: Pic-->
+                <div class="me-7 mb-4">
+                    <div class="symbol symbol-100px symbol-lg-160px symbol-fixed position-relative">
+                        <img src="{{ object.get_foto }}" alt="image">
+                        <div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-primary rounded-circle border border-4 border-body h-20px w-20px"></div>
+                    </div>
+                </div>
+                <!--end::Pic-->
+                <!--begin::Info-->
+                <div class="flex-grow-1">
+                    <!--begin::Title-->
+                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                        <!--begin::User-->
+                        <div class="d-flex flex-column">
+                            <!--begin::Name-->
+                            <div class="d-flex align-items-center mb-2">
+                                <a href="#" class="text-gray-900 text-hover-primary fs-2 fw-bold me-1">
+                                    {% if object.nombre %}{{ object }}{% else %}N/A{% endif %}</a>
+                                <a href="#">
+                                    <i class="ki-duotone ki-verify fs-1 text-primary">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>
+                                </a>
+                            </div>
+                            <!--end::Name-->
+                            <!--begin::Info-->
+                            <div class="d-flex flex-wrap fw-semibold fs-6 mb-4 pe-2">
+                                <a href="#"
+                                   class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
+                                    <i class="ki-duotone ki-profile-circle fs-4 me-1 text-primary">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                        <span class="path3"></span>
+                                    </i>{% if object.cargo %}{{ object.cargo }}{% else %}N/A{% endif %}</a>
+
+                                <a href="#"
+                                   class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
+                                    <i class="ki-duotone ki-sms fs-4 me-1 text-primary">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>{% if object.correo %}{{ object.correo }}{% else %}N/A{% endif %}</a>
+                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary mb-2">
+                                    <i class="ki-duotone ki-phone fs-4 me-1 text-primary">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>{% if object.telefono %}{{ object.telefono }}{% else %}N/A{% endif %}</a>
+                            </div>
+                            <!--end::Info-->
+                        </div>
+                        <!--end::User-->
+
+                    </div>
+                    <!--end::Title-->
+                    <!--begin::Stats-->
+                    <div class="d-flex flex-wrap flex-stack">
+                        <!--begin::Wrapper-->
+                        <div class="d-flex flex-column flex-grow-1 pe-8">
+                            <!--begin::Stats-->
+                            <div class="d-flex flex-wrap">
+                                <!--begin::Stat-->
+                                <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                                    <!--begin::Number-->
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="ki-duotone ki-arrow-up fs-3 text-primary me-2">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                        <div class="fs-2 fw-bold counted" data-kt-countup="true"
+                                             data-kt-countup-value="4500" data-kt-countup-prefix="$"
+                                             data-kt-initialized="1">{{ object.acciones.count }}
+                                        </div>
+                                    </div>
+                                    <!--end::Number-->
+                                    <!--begin::Label-->
+                                    <div class="fw-semibold fs-6 text-gray-500">Acciones regsitradas</div>
+                                    <!--end::Label-->
+                                </div>
+                                <!--end::Stat-->
+
+                            </div>
+                            <!--end::Stats-->
+                        </div>
+                        <!--end::Wrapper-->
+                        <!--begin::Progress-->
+
+                        <!--end::Progress-->
+                    </div>
+                    <!--end::Stats-->
+                </div>
+                <!--end::Info-->
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <!--begin::Card head-->
+        <div class="card-header card-header-stretch">
+            <!--begin::Title-->
+
+            <!--end::Title-->
+            <!--begin::Toolbar-->
+            <div class="card-toolbar m-0">
+                <!--begin::Tab nav-->
+                <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 border-0 fw-bold" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a id="kt_activity_today_tab"
+                           class="nav-link justify-content-center text-active-gray-800 active" data-bs-toggle="tab"
+                           role="tab" href="#kt_activity_datos" aria-selected="true">Datos</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a id="kt_activity_week_tab" class="nav-link justify-content-center text-active-gray-800"
+                           data-bs-toggle="tab" role="tab" href="#kt_activity_notificaciones" aria-selected="false"
+                           tabindex="-1">Notificaciones</a>
+                    </li>
+                </ul>
+                <!--end::Tab nav-->
+            </div>
+            <!--end::Toolbar-->
+        </div>
+        <!--end::Card head-->
+        <!--begin::Card body-->
+        <div class="card-body">
+            <!--begin::Tab Content-->
+            <div class="tab-content">
+                <!--begin::Tab panel-->
+                <div id="kt_activity_datos" class="card-body p-0 tab-pane fade show active" role="tabpanel"
+                     aria-labelledby="kt_activity_today_tab">
+                    <form action="." method="post" enctype="multipart/form-data" id="kt_in_form">
+                        <div class="card-body pt-9 pb-0">
+                            {% csrf_token %}
+                            <div class="row mb-6">
+                                <!--begin::Label-->
+                                <label class="col-lg-4 col-form-label fs-6 text-gray-900 text-hover-primary fw-bold">Nombre
+                                    y Apellidos</label>
+                                <!--end::Label-->
+                                <!--begin::Col-->
+                                <div class="col-lg-8">
+                                    <!--begin::Row-->
+                                    <div class="row">
+                                        <!--begin::Col-->
+                                        <div class="col-lg-6 fv-row fv-plugins-icon-container">
+                                            {{ form.nombre }}
+                                            <span class="text-danger">{{ form.nombre.errors }}</span>
+                                            <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                        </div>
+                                        <!--end::Col-->
+                                        <!--begin::Col-->
+                                        <div class="col-lg-6 fv-row fv-plugins-icon-container">
+                                            {{ form.apellidos }}
+                                            <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                        </div>
+                                        <!--end::Col-->
+                                    </div>
+                                    <!--end::Row-->
+                                </div>
+                                <!--end::Col-->
+                            </div>
+                            <div class="row mb-6">
+                                <!--begin::Label-->
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6 fw-bold">Correo
+                                    electrónico</label>
+                                <!--end::Label-->
+                                <!--begin::Col-->
+                                <div class="col-lg-8 fv-row">
+                                    {{ form.correo }}
+                                    <span class="text-danger">{{ form.correo.errors }}</span>
+                                </div>
+                                <!--end::Col-->
+                            </div>
+                            <div class="row mb-6">
+                                <!--begin::Label-->
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6 fw-bold">Teléfono</label>
+                                <!--end::Label-->
+                                <!--begin::Col-->
+                                <div class="col-lg-8 fv-row">
+                                    {{ form.telefono }}
+                                    <span class="text-danger">{{ form.telefono.errors }}</span>
+                                </div>
+                                <!--end::Col-->
+                            </div>
+                            <div class="row mb-6">
+                                <!--begin::Label-->
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6 fw-bold">Sexo</label>
+                                <!--end::Label-->
+                                <!--begin::Col-->
+                                <div class="col-lg-8 fv-row">
+                                    {{ form.sexo }}
+                                </div>
+                                <!--end::Col-->
+                            </div>
+                            <div class="row mb-6">
+                                <!--begin::Label-->
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6 fw-bold">Edad</label>
+                                <!--end::Label-->
+                                <!--begin::Col-->
+                                <div class="col-lg-8 fv-row">
+                                    {{ form.edad }}
+                                </div>
+                                <!--end::Col-->
+                            </div>
+                            <div class="row mb-6">
+                                <!--begin::Label-->
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6 fw-bold">Entidad</label>
+                                <!--end::Label-->
+                                <!--begin::Col-->
+                                <div class="col-lg-8 fv-row">
+                                    {{ form.entidad }}
+                                    <span class="text-danger">{{ form.entidad.errors }}</span>
+                                </div>
+                                <!--end::Col-->
+                            </div>
+                            <div class="row mb-6">
+                                <!--begin::Label-->
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6 fw-bold">Cargo</label>
+                                <!--end::Label-->
+                                <!--begin::Col-->
+                                <div class="col-lg-8 fv-row">
+                                    {{ form.cargo }}
+                                    <span class="text-danger">{{ form.cargo.errors }}</span>
+                                </div>
+                                <!--end::Col-->
+                            </div>
+                            <div class="row mb-6">
+                                <!--begin::Label-->
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6 fw-bold">Foto</label>
+                                <!--end::Label-->
+                                <!--begin::Col-->
+                                <div class="col-lg-8 fv-row">
+                                    {{ form.foto }}
+                                    <span class="text-danger">{{ form.foto.errors }}</span>
+                                </div>
+                                <!--end::Col-->
+                            </div>
+
+                        </div>
+                        <div class="card-footer d-flex justify-content-end py-6 px-9">
+                            <a href="{% url 'registro:home' %}"
+                               class="btn btn-light btn-active-light-primary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-primary" id="kt_in_submit">Guardar</button>
+                        </div>
+
+                    </form>
+                </div>
+                <div id="kt_activity_notificaciones" class="card-body p-0 tab-pane fade "
+                     role="tabpanel"
+                     aria-labelledby="kt_activity_week_tab">
+                    <!--begin::Timeline-->
+
+                    <div class="timeline timeline-border-dashed scroll h-400px px-5">
+                        <!--begin::Timeline item-->
+                        {% for noti in notificacions %}
+                            <div class="timeline-item">
+                                <!--begin::Timeline line-->
+                                {% if forloop.last %}
+                                {% else %}
+                                    <div class="timeline-line"></div>
+                                {% endif %}
+                                <!--end::Timeline line-->
+                                <!--begin::Timeline icon-->
+                                <div class="timeline-icon">
+                                    <i class="ki-outline ki-message-text-2 fs-2 text-gray-500"></i>
+                                </div>
+                                <!--end::Timeline icon-->
+                                <!--begin::Timeline content-->
+                                <div class="timeline-content mb-10 mt-n1">
+                                    <!--begin::Timeline heading-->
+                                    <div class="pe-3 mb-5">
+                                        <!--begin::Title-->
+                                        <div class="fs-5 fw-semibold mb-2">{{ noti.mensaje }}</div>
+                                    </div>
+                                    <!--end::Title-->
+                                    <!--begin::Description-->
+                                    <div class="d-flex align-items-center mt-1 fs-6">
+                                        <!--begin::Info-->
+                                        <div class="text-muted me-2 fs-7">hace {{ noti.get_tiempo_desde_creacion }}</div>
+                                        <!--end::Info-->
+                                    </div>
+                                    <!--end::Description-->
+                                </div>
+                            </div>
+                            <!--end::Timeline content-->
+                        {% endfor %}
+                    </div>
+
+
+                </div>
+                <!--end::Timeline-->
+            </div>
+        </div>
+        <!--end::Tab Content-->
+    </div>
+
+{% endblock %}
+{% block js %}
+    <script src="{% static 'assets/js/general.js' %}" ></script>
+{% endblock %}

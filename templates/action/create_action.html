@@ -1,0 +1,416 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+{% block css %}
+{% endblock %}
+{% block breadcumb %}
+    {% include 'layout/breadcumbs.html' %}
+{% endblock %}
+{% block content %}
+
+    <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+        <!--begin::Tab content-->
+        <form method="POST" enctype="multipart/form-data" id="kt_sign_in_form">
+            {% csrf_token %}
+            <div class="tab-content mt-3">
+                <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
+
+                    <div class="card card-flush w-100">
+
+                        <!--begin::Card header-->
+                        <div class="card-header">
+                            <div class="card-title">
+                                <h2>Datos de la Acción</h2>
+                            </div>
+                        </div>
+                        <!--end::Card header-->
+                        <!--begin::Card body-->
+                        <div class="card-body pt-0">
+                            <div class="mb-10 fv-plugins-icon-container">
+                                <!--begin::Label-->
+                                <label class="form-label">{{ form.tipo_accion.label }}</label>
+                                <!--end::Label-->
+                                <div class="row row-cols-2 row-cols-md-4 g-5">
+                                    {% for ta in tipo_acciones %}
+                                        <div class="col">
+                                            <!--begin::Option-->
+                                            <input type="radio" class="btn-check" name="tipo_accion"
+                                                   value="{{ ta.id }}"
+                                                   id="{{ ta.id }}"
+                                                   {% if selected_tipo_acciones == ta %}checked="checked"
+                                                   {% elif forloop.first %}checked="checked"{% endif %}>
+                                            <label class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex justify-content-between  gap-5"
+                                                   for="{{ ta.id }}">
+                                                <!--begin::Label-->
+                                                <div class="fs-5 fw-bold">{{ ta.nombre }}</div>
+
+                                                <i class="ki-duotone ki-information fs-2x" data-bs-toggle="tooltip"
+                                                   data-bs-placement="top"
+                                                   title="{{ ta.info_tooltip }}">
+                                                    <i class="path1"></i>
+                                                    <i class="path2"></i>
+                                                    <i class="path3"></i>
+                                                </i>
+
+                                                <!--end::Label-->
+                                            </label>
+
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <!--begin::Input group-->
+                            <div class="mb-10 fv-row fv-plugins-icon-container">
+                                <!--begin::Label-->
+                                <label class="required form-label">{{ form.nombre.label }}</label>
+                                <!--end::Label-->
+                                <!--begin::Input-->
+                                {{ form.nombre }}
+                                <!--end::Input-->
+                                <!--begin::Description-->
+                                <div class="text-muted text-danger fs-7">{{ form.nombre.errors }}</div>
+                                <!--end::Description-->
+                                <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                            </div>
+                            <!--end::Input group-->
+                            <!--begin::Input group-->
+                            <div class="mb-10 fv-row fv-plugins-icon-container">
+                                <!--begin::Label-->
+                                <label class="required form-label">{{ form.objetivo.label }}</label>
+                                <!--end::Label-->
+                                <!--begin::Input-->
+                                {{ form.objetivo }}
+                                <!--end::Input-->
+                                <!--begin::Description-->
+                                <div class="text-muted text-danger fs-7">{{ form.objetivo.errors }}</div>
+                                <!--end::Description-->
+                                <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                            </div>
+                            <!--end::Input group-->
+                            <!--begin::Input group-->
+                            <div class="mb-10 fv-row fv-plugins-icon-container">
+                                <!--begin::Label-->
+                                <label class="required form-label">{{ form.descripcion.label }}</label>
+                                <!--end::Label-->
+                                <!--begin::Input-->
+                                {{ form.descripcion }}
+                                <!--end::Input-->
+                                <!--begin::Description-->
+                                <div class="text-muted text-danger fs-7">{{ form.descripcion.errors }}</div>
+                                <!--end::Description-->
+                                <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                            </div>
+                            <div class="mb-10 fv-row fv-plugins-icon-container">
+                                <!--begin::Label-->
+                                <label class="required form-label">{{ form.meta.label }}</label>
+                                <!--end::Label-->
+                                <!--begin::Input-->
+                                {{ form.meta }}
+                                <!--end::Input-->
+                                <!--begin::Description-->
+                                <div class="text-muted text-danger fs-7">{{ form.meta.errors }}</div>
+                                <!--end::Description-->
+                                <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                            </div>
+                            <div class="d-flex flex-column flex-sm-row justify-content-between gap-5">
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <!--begin::Label-->
+                                    <label class="required form-label">{{ form.sector.label }}</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    {{ form.sector }}
+                                    <!--end::Input-->
+                                    <!--begin::Description-->
+                                    <div class="text-danger fs-7">{{ form.sector.errors }}</div>
+                                    <!--end::Description-->
+                                    <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                </div>
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <!--begin::Label-->
+                                    <label class="form-label">{{ form.alcance.label }}</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    {{ form.alcance }}
+                                    <!--end::Input-->
+                                    <!--begin::Description-->
+                                    <div class="text-muted text-danger fs-7">{{ form.alcance.errors }}</div>
+                                    <!--end::Description-->
+                                    <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                </div>
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <!--begin::Label-->
+                                    <label class="form-label">{{ form.lugar_intervencion.label }}</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    {{ form.lugar_intervencion }}
+                                    <!--end::Input-->
+                                    <!--begin::Description-->
+                                    <div class="text-muted text-danger fs-7">{{ form.lugar_intervencion.errors }}</div>
+                                    <!--end::Description-->
+                                    <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                </div>
+
+                            </div>
+                            <div class="d-flex flex-column flex-sm-row justify-content-between gap-5">
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <!--begin::Label-->
+                                    <label class="form-label">{{ form.escenario.label }}</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    {{ form.escenario }}
+                                    <!--end::Input-->
+                                    <!--begin::Description-->
+                                    <div class="text-muted text-danger fs-7">{{ form.escenario.errors }}</div>
+                                    <!--end::Description-->
+                                    <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                </div>
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <!--begin::Label-->
+                                    <label class="form-label">{{ form.escala.label }}</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    {{ form.escala }}
+                                    <!--end::Input-->
+                                    <!--begin::Description-->
+                                    <div class="text-muted text-danger fs-7">{{ form.escala.errors }}</div>
+                                    <!--end::Description-->
+                                    <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                </div>
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <!--begin::Label-->
+                                    <label class="form-label">{{ form.programa_apoyo.label }}</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    {{ form.programa_apoyo }}
+                                    <!--end::Input-->
+                                    <!--begin::Description-->
+                                    <div class="text-muted text-danger fs-7">{{ form.programa_apoyo.errors }}</div>
+                                    <!--end::Description-->
+                                    <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                </div>
+
+                            </div>
+                            <!--end::Input group-->
+                            <div class="flex-column d-flex flex-sm-row  justify-content-between gap-5 _wrapper">
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <!--begin::Label-->
+                                    <label class="form-label">{{ form.programa_productivo.label }}</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    {{ form.programa_productivo }}
+                                    <!--end::Input-->
+                                    <!--begin::Description-->
+                                    <div class="text-muted text-danger fs-7">{{ form.programa_productivo.errors }}</div>
+                                    <!--end::Description-->
+                                    <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                </div>
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <!--begin::Label-->
+                                    <label class="form-label">{{ form.entidad_responsable.label }}</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    {{ form.entidad_responsable }}
+                                    <!--end::Input-->
+                                    <!--begin::Description-->
+                                    <div class="text-muted text-danger fs-7">{{ form.entidad_responsable.errors }}</div>
+                                    <!--end::Description-->
+                                    <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                </div>
+
+                            </div>
+                            <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                <!--begin::Label-->
+                                <label class="form-label">{{ form.municipios.label }}</label>
+                                <!--end::Label-->
+                                <!--begin::Input-->
+                                {{ form.municipios }}
+                                <!--end::Input-->
+                                <!--begin::Description-->
+                                <div class="text-muted text-danger fs-7">{{ form.municipios.errors }}</div>
+                                <!--end::Description-->
+                                <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                            </div>
+                            <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                <!--begin::Label-->
+                                <label class="form-label">{{ form.provincias.label }}</label>
+                                <!--end::Label-->
+                                <!--begin::Input-->
+                                {{ form.provincias }}
+                                <!--end::Input-->
+                                <!--begin::Description-->
+                                <div class="text-muted text-danger fs-7">{{ form.provincias.errors }}</div>
+                                <!--end::Description-->
+                                <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                            </div>
+                            <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                <!--begin::Label-->
+                                <label class="form-label">{{ form.otras_entidades.label }}</label>
+                                <!--end::Label-->
+                                <!--begin::Input-->
+                                {{ form.otras_entidades }}
+                                <!--end::Input-->
+                                <!--begin::Description-->
+                                <div class="text-muted text-danger fs-7">{{ form.otras_entidades.errors }}</div>
+                                <!--end::Description-->
+                                <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                            </div>
+                            {% if object %}
+                                <div class="d-flex flex-column align-items-start flex-xxl-row">
+
+                                    <div class="mb-10 fv-row fv-plugins-icon-container w-100">
+                                        <!--begin::Label-->
+                                        <label class="required form-label">{{ form.estado_accion.label }}</label>
+                                        <!--end::Label-->
+                                        <!--begin::Input-->
+                                        {{ form.estado_accion }}
+                                        <!--end::Input-->
+                                        <!--begin::Description-->
+                                        <div class="text-muted text-danger fs-7">{{ form.estado_accion.errors }}</div>
+                                        <!--end::Description-->
+                                        <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback"></div>
+                                    </div>
+
+                                </div>
+                            {% endif %}
+                            <div class="flex-column d-flex flex-sm-row  justify-content-between gap-5 _wrapper">
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                   <h2>Duración</h2>
+                                    <div class="flex-column d-flex flex-sm-row  justify-content-between gap-5 _wrapper">
+                                        <!--begin::Input group-->
+                                        <div class="d-flex align-items-center flex-equal fw-row">
+                                            <!--begin::Date-->
+                                            <div class="fs-6 fw-bold text-gray-700 text-nowrap me-2 w-25">
+                                                Inicio:
+                                            </div>
+                                            <!--end::Date-->
+                                            <!--begin::Input-->
+                                            <div class="position-relative d-flex align-items-center w-75">
+                                                <!--begin::Datepicker-->
+                                                <input class="form-control fw-bold pe-5 flatpickr-input" required
+                                                       placeholder="Fecha de inicio" name="fecha_inicio"
+                                                       id="kt_fecha_inicio_flatpickr">
+                                                <!--end::Datepicker-->
+                                                <!--begin::Icon-->
+                                                <i class="ki-duotone ki-calendar fs-4 position-absolute ms-4 end-0 me-2">
+                                                    <div class="path1"></div>
+                                                    <div class="path2"></div>
+                                                </i>
+                                                <!--end::Icon-->
+                                            </div>
+                                            <!--end::Input-->
+                                        </div>
+
+                                        <div class="d-flex align-items-center
+                                             flex-equal fw-row">
+                                            <!--begin::Date-->
+                                            <div class="fs-6 fw-bold text-gray-700 text-nowrap me-2 w-25">
+                                                Fin:
+                                            </div>
+                                            <!--end::Date-->
+                                            <!--begin::Input-->
+                                            <div class="position-relative d-flex align-items-center w-75">
+                                                <input class="form-control fw-bold pe-5 flatpickr-input"
+                                                       placeholder="Fecha fin" name="fecha_fin"
+                                                       id="kt_fecha_fin_flatpickr">
+                                                <!--end::Datepicker-->
+                                                <!--begin::Icon-->
+                                                <i class="ki-duotone ki-calendar fs-4 position-absolute ms-4 end-0 me-2">
+                                                    <div class="path1"></div>
+                                                    <div class="path2"></div>
+                                                </i>
+                                            </div>
+                                            <div class="text-muted text-danger fs-7">{{ form.fecha_fin.errors }}</div>
+                                            <!--end::Input-->
+                                        </div>
+                                        <!--end::Input group-->
+                                    </div>
+
+                                </div>
+
+                                <div class="mb-10 mb-sm-5 fv-row fv-plugins-icon-container w-100">
+                                    <h2>Documentos</h2>
+                                    <!--begin::Input group-->
+                                    <div class="fv-row mb-2 ">
+                                        {{ form_docs.documentos }}
+                                        {#                                    <input name="documento" type="file" class="form-control" multiple>#}
+                                    </div>
+                                    <!--end::Input group-->
+                                    <!--begin::Description-->
+                                    <div class="text-muted fs-7">Subir documentos.</div>
+                                    <!--end::Description-->
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-center mt-3">
+                                <!--begin::Button-->
+                                <a href="{{ url_cancel }}"
+                                   class="btn btn-light me-5">Cancelar</a>
+                                <!--end::Button-->
+                                <!--begin::Button-->
+                                <button type="submit" id="kt_in_submit" class="btn btn-primary">
+                                    <span class="indicator-label">Guardar</span>
+                                    <span class="indicator-progress">Procesando...
+											<span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                                </button>
+                                <!--end::Button-->
+                            </div>
+                        </div>
+                        <!--end::Card header-->
+                    </div>
+
+                </div>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}
+{% block js %}
+    <script src="{% static 'assets/js/general.js' %}"></script>
+    <script>
+        $(function () {
+            var defaultDate = '';
+            var defaultDate2 = '';
+
+            {% if object.fecha_inicio %}
+                defaultDate = "{{ object.fecha_inicio | date:'Y-m-d' }}";
+            {% endif %}
+            {% if object.fecha_fin %}
+                defaultDate2 = "{{ object.fecha_fin | date:'Y-m-d' }}";
+            {% endif %}
+            const locale_flatpickr = {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+                },
+                months: {
+                    shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Оct', 'Nov', 'Dic'],
+                    longhand: ['Enero', 'Febrero', 'Мarzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                },
+            };
+
+            const e = document.querySelector("#kt_fecha_inicio_flatpickr");
+            const e_2 = document.querySelector("#kt_fecha_fin_flatpickr");
+            n = $(e).flatpickr({
+                altInput: !0,
+                altFormat: "d/m/Y",
+                dateFormat: "Y-m-d",
+                defaultDate: defaultDate,
+
+                //onChange: function (e) {
+                //   a(e, t, n)
+                //{,
+                locale: locale_flatpickr
+            });
+            n_1 = $(e_2).flatpickr({
+                altInput: !0,
+                altFormat: "d/m/Y",
+                dateFormat: "Y-m-d",
+                defaultDate: defaultDate2,
+                //onChange: function (e) {
+                //   a(e, t, n)
+                //{,
+                locale: locale_flatpickr
+            });
+
+        })
+    </script>
+{% endblock %}

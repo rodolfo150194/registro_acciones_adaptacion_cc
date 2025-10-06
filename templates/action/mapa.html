@@ -1,0 +1,385 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'assets/css/leaflet.css' %}"/>
+    <link rel="stylesheet" href="{% static 'assets/css/mapa.css' %}"/>
+{% endblock %}
+{% block content %}
+    <div class="row g-0">
+        <!-- Sidebar -->
+        <div class="col-lg-3 col-xl-3 sidebar p-5 position-relative" id="sidebar">
+            <!-- Header -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h4 class="mb-0 ">
+                    <i class="fas fa-leaf text-success me-2"></i>
+                    Acciones Climáticas
+                </h4>
+                <button class="btn btn-sm btn-secondary" onclick="toggleSidebar()">
+                    <i class="fa fa-arrow-left"></i>
+                </button>
+            </div>
+
+            <!-- Métricas Clave -->
+            <div class="filter-section p-3 mb-3">
+                <h6 class="mb-3">
+                    <i class="fas fa-chart-line text-dark me-2"></i>
+                    Resumen Ejecutivo
+                </h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="metric-card p-2 text-center">
+                            <div class="h5 mb-1" id="totalAcciones">1</div>
+                            <small>Acciones</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card p-2 text-center">
+                            <div class="h5 mb-1 text-success" id="accionesActivas">1</div>
+                            <small>Activas</small>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="metric-card p-2 text-center">
+                            <div class="h6 mb-1" id="presupuestoTotal">$2,500,000 USD</div>
+                            <small>Presupuesto Total</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="filter-section p-3 mb-3">
+                <h6 class="mb-3">
+                    <i class="fas fa-filter text-dark me-2"></i>
+                    Filtros
+                </h6>
+
+                <!-- Búsqueda -->
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Buscar acciones...">
+                </div>
+
+                <!-- Tipo de la Acción -->
+                <div class="mb-3">
+                    <label class="form-label small">Tipo de acción</label>
+                    <select class="form-select" id="tipoFilter">
+                        <option value="">Todos los estados</option>
+                        {% for tipo in tipo_acciones %}
+                            <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sector -->
+                <div class="mb-3">
+                    <label class="form-label small">Sector</label>
+                    <select class="form-select" id="sectorFilter">
+                        <option value="">Todos los sectores</option>
+                        {% for sec in sectores %}
+                            <option value="{{ sec.id }}">{{ sec.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            <!-- Sector -->
+                <div class="mb-3">
+                    <label class="form-label small">Escenario</label>
+                    <select class="form-select" id="escenarioFilter">
+                        <option value="">Todos los escenarios</option>
+                        {% for est in escenarios %}
+                            <option value="{{ est.id }}">{{ est.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Estado -->
+                <div class="mb-3">
+                    <label class="form-label small">Estado</label>
+                    <select class="form-select" id="estadoFilter">
+                        <option value="">Todos los estados</option>
+                        {% for est in estados %}
+                            <option value="{{ est.id }}">{{ est.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Fecha de Implementación -->
+                <div class="mb-3">
+                    <label class="form-label small">Período</label>
+                    <div class="position-relative d-flex align-items-center">
+                        <!--begin::Datepicker-->
+                        <input class="form-control fw-bold pe-5 flatpickr-input"
+                               placeholder="Fecha de inicio" name="fecha"
+                               id="peridoFilter">
+                        <!--end::Datepicker-->
+                        <!--begin::Icon-->
+                        <i class="ki-duotone ki-calendar fs-4 position-absolute ms-4 end-0 me-2">
+                            <div class="path1"></div>
+                            <div class="path2"></div>
+                        </i>
+                        <!--end::Icon-->
+                    </div>
+                </div>
+
+                <!-- Botones de Control -->
+                <div class="d-flex gap-2">
+                    <button class="btn btn-light btn-sm flex-fill" onclick="limpiarFiltros()">
+                        <i class="fas fa-eraser me-1"></i>Limpiar
+                    </button>
+                    <button class="btn btn-primary btn-sm flex-fill" onclick="aplicarFiltros()">
+                        <i class="fas fa-search me-1"></i>Aplicar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Exportar Datos -->
+            <div class="mt-3">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-secondary " onclick="exportarDatos()">
+                        <i class="fas fa-download text-dark me-2"></i>Exportar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mapa -->
+        <div class="col-lg-9 col-xl-9 position-relative">
+            <button class="toggle-sidebar d-lg-none" onclick="toggleSidebar()">
+                <i class="fa fa-arrow-left"></i>
+            </button>
+            <div id="map"></div>
+        </div>
+    </div>
+    {#    <div class="loading" id="loading">Buscando municipio...</div>#}
+{% endblock %}
+{% block js %}
+    <script src="{% static 'assets/js/leaflet.js' %}"></script>
+    <script src="{% static 'assets/js/shapefile.js' %}"></script>
+    <script>
+
+            //Filtros
+            const locale_flatpickr = {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+                },
+                months: {
+                    shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Оct', 'Nov', 'Dic'],
+                    longhand: ['Enero', 'Febrero', 'Мarzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                },
+            };
+            $('#peridoFilter').flatpickr({
+                altInput: !0,
+                altFormat: "d/m/Y",
+                dateFormat: "Y-m-d",
+                mode: 'range',
+                locale: locale_flatpickr
+            });
+
+
+            var map = L.map('map').setView([21.5, -80.0], 7);
+            map.zoomControl.setPosition('topright');
+            var provinciasLayer;
+            var shpLayer;
+            var municipiosLayer = null;
+
+            // Capa base normal
+            var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // Capa satélite (ejemplo, otra base)
+            var esriSat = L.tileLayer(
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                {attribution: 'Tiles © Esri'}
+            );
+
+            function getRandomColor() {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
+
+            {#fetch("{% static 'data/cuba.json' %}")  #}
+            fetch("{% static 'data/municipios/vc.geojson' %}")
+                .then(res => res.json())
+                .then(data => {
+                    var provincias = L.geoJSON(data, {
+                        style: {
+                            color: getRandomColor(),
+                            weight: 2,
+                            {#fillColor: "#2c7fb8",#}
+                            fillOpacity: 0.5
+                        },
+                        onEachFeature: function (feature, layer) {
+                            layer.on('click', function () {
+                                layer.bindPopup(
+                                    `<b>${feature.properties.municipality}</b><br>
+                     Provincia: ${feature.properties.province || 'N/D'}`
+                                ).openPopup();
+                            });
+                        }
+                    });
+
+                    // Control de capas
+                    L.control.layers(
+                        {"OSM": osm, "Satélite": esriSat},  // Mapas base
+                        {"Provincias": provincias}          // Overlay
+                    ).addTo(map);
+
+                    {#provincias.addTo(map);#}
+                });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('d-lg-none');
+        }
+
+        function aplicarFiltros() {
+            var tipo = document.getElementById('tipoFilter').value;
+            var estado = document.getElementById('estadoFilter').value;
+            var sector = document.getElementById('sectorFilter').value;
+            var escenario = document.getElementById('escenarioFilter').value;
+            var fecha = document.getElementById('peridoFilter').value;
+            // Construir los parámetros dinámicamente
+            var params = [];
+            if (tipo) params.push('tipo=' + encodeURIComponent(tipo));
+            if (estado) params.push('estado=' + encodeURIComponent(estado));
+            if (sector) params.push('sector=' + encodeURIComponent(sector));
+            if (escenario) params.push('escenario=' + encodeURIComponent(escenario));
+            if (fecha) params.push('fecha=' + encodeURIComponent(fecha));
+            var queryString = params.length > 0 ? '?' + params.join('&') : '';
+            fetch(`{% url 'registro:municipios_por_tipo_accion' %}${queryString}`)
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(err => { throw err; });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    // Actualizar resumen ejecutivo
+                    if (data.resumen) {
+                        document.getElementById('totalAcciones').textContent = data.resumen.total_acciones;
+                        document.getElementById('accionesActivas').textContent = data.resumen.total_activas;
+                        if (data.resumen.presupuesto_total && data.resumen.presupuesto_total.length > 0) {
+                            document.getElementById('presupuestoTotal').innerHTML = data.resumen.presupuesto_total.map(p => `${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
+                        } else {
+                            document.getElementById('presupuestoTotal').innerHTML = 'N/D';
+                        }
+                    }
+                    if (municipiosLayer) {
+                        map.removeLayer(municipiosLayer);
+                        municipiosLayer = null;
+                    }
+                    if (data.tipo === 'municipio') {
+                        // Agrupar municipios por provincia_hc_keys
+                        const grupos = {};
+                        data.municipios.forEach(m => {
+                            if (!grupos[m.provincia_hc_keys]) grupos[m.provincia_hc_keys] = [];
+                            grupos[m.provincia_hc_keys].push(m);
+                        });
+                        Object.keys(grupos).forEach(hc_keys => {
+                            fetch(`/static/data/municipios/${hc_keys}.geojson`)
+                                .then(res => res.json())
+                                .then(geojson => {
+                                    const ids = grupos[hc_keys].map(m => m.municipio_id);
+                                    const municipiosData = grupos[hc_keys];
+                                    const nombres = municipiosData.map(m => m.municipio_nombre.trim().toLowerCase());
+                                    const layer = L.geoJSON(geojson, {
+                                        filter: function (feature) {
+                                            // Comparar por nombre de municipio (insensible a mayúsculas/minúsculas y espacios)
+                                            return nombres.includes((feature.properties.municipality || '').trim().toLowerCase());
+                                        },
+                                        style: {
+                                            color: getRandomColor(),
+                                            weight: 2,
+                                            {#fillColor: '#2c7fb8',#}
+                                            fillOpacity: 0.5
+                                        },
+                                        onEachFeature: function (feature, lyr) {
+                                            const municipio = municipiosData.find(m => m.municipio_nombre.trim().toLowerCase() === (feature.properties.municipality || '').trim().toLowerCase());
+                                            console.log(data.resumen)
+                                            if (municipio) {
+                                                let presupuestoHtml = '';
+                                                if (municipio.presupuesto_total && municipio.presupuesto_total.length > 0) {
+                                                    presupuestoHtml = '<b>Presupuesto:</b><br>' + municipio.presupuesto_total.map(p => `- ${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
+                                                } else {
+                                                    presupuestoHtml = '<b>Presupuesto:</b> N/D';
+                                                }
+                                                lyr.bindPopup(
+                                                    `<b>${municipio.municipio_nombre}</b><br>` +
+                                                    `Provincia: ${municipio.provincia_nombre}<br>` +
+                                                    `Acciones: ${municipio.acciones_count}<br>` +
+                                                    `${presupuestoHtml}`
+                                                );
+                                            }
+                                        }
+                                    });
+                                    if (!municipiosLayer) municipiosLayer = L.layerGroup();
+                                    municipiosLayer.addLayer(layer);
+                                    municipiosLayer.addTo(map);
+                                    // Zoom si solo hay un municipio
+                                    if (ids.length === 1) {
+                                        layer.eachLayer(function (l) {
+                                            map.fitBounds(l.getBounds());
+                                        });
+                                    }
+                                });
+                        });
+                    } else if (data.tipo === 'provincia') {
+                        data.provincias.forEach(prov => {
+                            fetch(`/static/data/provincias/${prov.provincia_hc_keys}.geojson`)
+                                .then(res => res.json())
+                                .then(geojson => {
+                                    const layer = L.geoJSON(geojson, {
+                                        style: {
+                                            color: '#2c7fb8',
+                                            weight: 2,
+                                            fillColor: '#2c7fb8',
+                                            fillOpacity: 0.5
+                                        },
+                                        onEachFeature: function (feature, lyr) {
+                                            let presupuestoHtml = '';
+                                            console.log(data.resumen)
+                                            if (prov.presupuesto_total && prov.presupuesto_total.length > 0) {
+                                                presupuestoHtml = '<b>Presupuesto:</b><br>' + prov.presupuesto_total.map(p => `- ${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
+                                            } else {
+                                                presupuestoHtml = '<b>Presupuesto:</b> N/D';
+                                            }
+                                            lyr.bindPopup(
+                                                `<b>${prov.provincia_nombre}</b><br>` +
+                                                `Acciones: ${prov.acciones_count}<br>` +
+                                                `${presupuestoHtml}`
+                                            );
+                                        }
+                                    });
+                                    if (!municipiosLayer) municipiosLayer = L.layerGroup();
+                                    municipiosLayer.addLayer(layer);
+                                    municipiosLayer.addTo(map);
+                                    // Zoom si solo hay una provincia
+                                    layer.eachLayer(function (l) {
+                                        map.fitBounds(l.getBounds());
+                                    });
+                                });
+                        });
+                    }
+                })
+                .catch(err => {
+                    let msg = (err && err.error) ? err.error : 'Ocurrió un error al cargar los datos.';
+                    toastr.error(msg, 'Error');
+                });
+        }
+        function limpiarFiltros() {
+            document.getElementById('tipoFilter').value = '';
+            document.getElementById('sectorFilter').value = '';
+            document.getElementById('estadoFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('peridoFilter').value = null;
+            aplicarFiltros();
+        }
+
+    </script>
+{% endblock %}

@@ -1,0 +1,350 @@
+{% extends 'layout/base.html' %}
+{% load static i18n %}
+{% block css_vendor %}
+    <link href="{% static 'assets/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"
+          type="text/css"/>
+{% endblock %}
+{% block breadcumb %}
+    {% include 'layout/breadcumbs.html' %}
+{% endblock %}
+{% block content %}
+    <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+        <form method="post" enctype="multipart/form-data" id="kt_sign_in_form">
+            {% csrf_token %}
+            <div class="tab-content mt-3">
+                <div class="d-flex flex-column gap-7 gap-lg-10">
+                    <div class="card card-flush py-4">
+                        <div class="card-header d-flex">
+                            <div class="card-title">
+                                <h2>Ejecutar presupuesto de [{{ presupuesto_planificado.tipo_presupuesto.nombre }}
+                                    - {{ presupuesto_planificado.monto }}]</h2>
+                            </div>
+                            <div class="m-0 d-flex justify-content-end gap-5">
+                                <div class="border border-primary border-dashed rounded py-3 px-4 mb-3">
+                                    <!--begin::Number-->
+                                    <div class="fs-2 fw-bold">
+                                        <div data-kt-countup="true"
+                                             data-kt-countup-value="{{ presupuesto_planificado.get_monto_total_ejecutado | floatformat:2 }}"
+                                             data-kt-countup-prefix="$">+0
+                                        </div>
+
+                                    </div>
+                                    <!--begin::Label-->
+                                    <div class="fw-bold text-gray-700 fs-6">Total Ejecutado</div>
+                                    <!--end::Label-->
+                                </div>
+                                <div class="border border-primary border-dashed rounded py-3 px-4 mb-3">
+                                    <!--begin::Number-->
+                                    <div class="fs-2 fw-bold">
+                                        <div data-kt-countup="true"
+                                             data-kt-countup-value="{{ presupuesto_planificado.get_monto_restante | floatformat:2 }}"
+                                             data-kt-countup-prefix="$">+0
+                                        </div>
+                                    </div>
+                                    <!--begin::Label-->
+                                    <div class="fw-bold text-gray-700 fs-6">Total Restante</div>
+                                    <!--end::Label-->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body pt-0">
+                            <div class="mb-5 fv-plugins-icon-container">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="d-flex gap-5">
+                                            <div class="mb-5 fv-row fv-plugins-icon-container w-100">
+                                                <label class="form-label">{{ form.monto.label }}</label>
+                                                {{ form.monto }}
+                                                <div class="text-muted text-danger fs-7">{{ form.monto.errors }}</div>
+                                            </div>
+                                            <div class="mb-5 fv-row fv-plugins-icon-container w-md-25 w-100">
+                                                <label class="form-label">% Ejecutado</label>
+                                                <div class="input-group mb-5">
+                                                    <span class="input-group-text">%</span>
+                                                    <input type="text" class="form-control" value="0"
+                                                           aria-label="Porcentaje" id="porciento_ejecutado" readonly/>
+                                                </div>
+                                            </div>
+                                            <div class="mb-5 fv-row fv-plugins-icon-container w-100">
+                                                <label class="form-label">Restante Total</label>
+                                                <input class="form-control" type="number" value="0"
+                                                       id="presupuesto_restante" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 ">
+                                        <label class="form-label required">Período de ejecución</label>
+                                        <div class="d-flex gap-5">
+                                            <div class="mb-10 fv-row fv-plugins-icon-container w-100">
+                                                <div class="position-relative d-flex align-items-center w-100">
+                                                    <input class="form-control fw-bold pe-5 flatpickr-input" required
+                                                           placeholder="Inicio" name="fecha_inicio"
+                                                           id="kt_fecha_inicio_flatpickr"/>
+                                                    <!--end::Datepicker-->
+                                                    <!--begin::Icon-->
+                                                    <i class="ki-duotone ki-calendar fs-4 position-absolute ms-4 end-0 me-2">
+                                                        <div class="path1"></div>
+                                                        <div class="path2"></div>
+                                                    </i>
+                                                </div>
+                                                <div class="text-muted text-danger fs-7">{{ form.fecha_inicio.errors }}</div>
+                                            </div>
+                                            <div class="mb-10 fv-row fv-plugins-icon-container w-100">
+                                                <div class="position-relative d-flex align-items-center w-100">
+                                                    <input class="form-control fw-bold pe-5 flatpickr-input" required
+                                                           placeholder="Fin" name="fecha_fin"
+                                                           id="kt_fecha_fin_flatpickr"/>
+                                                    <!--end::Datepicker-->
+                                                    <!--begin::Icon-->
+                                                    <i class="ki-duotone ki-calendar fs-4 position-absolute ms-4 end-0 me-2">
+                                                        <div class="path1"></div>
+                                                        <div class="path2"></div>
+                                                    </i>
+                                                </div>
+                                                <div class="text-muted text-danger fs-7">{{ form.fecha_fin.errors }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-10 fv-row fv-plugins-icon-container w-100">
+                                            <label class="form-label">{{ form.observacion.label }}</label>
+                                            {{ form.observacion }}
+                                            <div class="text-muted text-danger fs-7">{{ form.observacion.errors }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-center mt-3">
+                                <a href="{% url 'registro:lista_accion' %}"
+                                   class="btn btn-light-primary me-5">Finalizar</a>
+                                <a href="{{ url_cancel }}" class="btn btn-light me-5">Atras</a>
+                                <button type="submit" id="kt_in_submit" class="btn btn-primary">
+                                    <span class="indicator-label">Guardar</span>
+                                    <span class="indicator-progress">Procesando...
+											<span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+    <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10 mt-5">
+        <div class="card card-flush">
+            <div class="card-body">
+                <div class="fw-bold text-center fs-3 text-gray-800 mb-8 border p-2">Presupuestos ejecutados de
+                    <span class="badge badge-primary fs-3">${{ presupuesto_planificado.monto }}</span>
+                </div>
+                <div class="row mt-5">
+                    <div class="col-md-12">
+                        <div class="table align-middle table-row-dashed fs-5 gy-5 dataTable no-footer">
+                            <table class="table mb-3"
+                                   id="kt_datatable_presupuestos_ejecutados_adaptacion">
+                                <thead>
+                                <tr class="border-bottom fw-bold fs-5 text-gray-900 fw-bolder">
+                                    <th class="min-w-175px pb-2">Monto</th>
+                                    <th class="min-w-70px text-center pb-2">Período de ejecución</th>
+                                    <th class="min-w-70px text-center pb-2">%</th>
+                                    <th class="min-w-70px text-center pb-2">Observación</th>
+                                    {#                                                            <th class="min-w-70px  pb-2">Total</th>#}
+                                    <th class="min-w-100px text-center pb-2">Opciones</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for pe in presupuestos_ejecutados %}
+                                    <tr class="fw-bold text-gray-700 fs-5">
+                                        <td class="d-flex align-items-center ">{{ pe.monto }}</td>
+                                        <td class="text-center">{{ pe.fecha_inicio | date:"d/m/Y" }}
+                                            - {{ pe.fecha_fin | date:"d/m/Y" }}</td>
+                                        <td class="text-center">{{ pe.get_porciento_ejecutado | floatformat:2 }}</td>
+                                        <td class="text-center">{% if pe.observacion %}
+                                            {{ pe.observacion }}{% else %}-{% endif %}</td>
+                                        {#                                                                <td>{{ presupuesto_planificado.monto }}</td>#}
+                                        <td class="d-flex justify-content-center gap-5">
+
+                                            <a href="{% url 'registro:editar_presupuesto_ejecutado' accion.id presupuesto_planificado.id pe.id %}"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="top"
+                                               title="Editar presupuesto">
+                                                <i class="ki-duotone ki-notepad-edit fs-2x">
+                                                    <div class="path1"></div>
+                                                    <div class="path2"></div>
+                                                    <div class="path3"></div>
+                                                </i>
+                                            </a>
+                                            <a type="button" data-bs-toggle="modal"
+                                               data-bs-target="#kt_modal_{{ pe.id }}"
+                                               data-bs-placement="top"
+                                               title="Eliminar presupuesto">
+                                                <i class="ki-duotone ki-trash fs-2x">
+                                                    <div class="path1"></div>
+                                                    <div class="path2"></div>
+                                                    <div class="path3"></div>
+                                                    <div class="path4"></div>
+                                                    <div class="path5"></div>
+                                                </i>
+                                            </a>
+                                            <div class="modal fade" tabindex="-1"
+                                                 id="kt_modal_{{ pe.id }}">
+                                                <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h3 class="modal-title">
+                                                                Eliminar [{{ pe }}]</h3>
+
+                                                            <!--begin::Close-->
+                                                            <div class="btn btn-icon btn-sm btn-active-light-primary ms-2"
+                                                                 data-bs-dismiss="modal"
+                                                                 aria-label="Close">
+                                                                <i class="ki-duotone ki-cross fs-1"><span
+                                                                        class="path1"></span><span
+                                                                        class="path2"></span></i>
+                                                            </div>
+                                                            <!--end::Close-->
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="text-center fs-4">
+                                                                Estas segura/o de eliminar
+                                                                este presupuesto
+                                                                ejecutado?.</p>
+                                                        </div>
+                                                        <form method="post" id="form_delete" action="{% url 'registro:eliminar_presupuesto_ejecutado' accion.id presupuesto_planificado.id pe.id %}">
+                                                            {% csrf_token %}
+                                                            <div class="modal-footer">
+                                                                <button type="button"
+                                                                        class="btn btn-light"
+                                                                        data-bs-dismiss="modal">
+                                                                    No
+                                                                </button>
+                                                                <button type="submit"
+                                                                        class="btn btn-primary">
+                                                                    Si
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-sm-12">
+                        <div class="m-0 d-flex justify-content-center gap-5">
+                            <div class="border border-primary border-dashed rounded py-3 px-4 mb-3">
+                                <!--begin::Number-->
+                                <div class="fs-2 fw-bold">
+                                    <div data-kt-countup="true"
+                                         data-kt-countup-value="{{ presupuesto_planificado.get_monto_total_ejecutado | floatformat:2 }}"
+                                         data-kt-countup-prefix="$">+0
+                                    </div>
+
+                                </div>
+                                <!--begin::Label-->
+                                <div class="fw-bold text-gray-700 fs-6">Total Ejecutado</div>
+                                <!--end::Label-->
+                            </div>
+                            <div class="border border-primary border-dashed rounded py-3 px-4 mb-3">
+                                <!--begin::Number-->
+                                <div class="fs-2 fw-bold">
+                                    <div data-kt-countup="true"
+                                         data-kt-countup-value="{{ presupuesto_planificado.get_monto_restante | floatformat:2 }}"
+                                         data-kt-countup-prefix="$">+0
+                                    </div>
+                                </div>
+                                <!--begin::Label-->
+                                <div class="fw-bold text-gray-700 fs-6">Total Restante</div>
+                                <!--end::Label-->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+    <script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script src="{% static 'assets/js/datatable_presupuesto_ejecutado.js' %}"></script>
+    <script src="{% static 'assets/js/general.js' %}"></script>
+    <script>
+        $(function () {
+            var defaultDate = '';
+            var defaultDate2 = '';
+
+            {% if object.fecha_inicio %}
+                defaultDate = "{{ object.fecha_inicio | date:'Y-m-d' }}";
+            {% endif %}
+            {% if object.fecha_fin %}
+                defaultDate2 = "{{ object.fecha_fin | date:'Y-m-d' }}";
+            {% endif %}
+            const locale_flatpickr = {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+                },
+                months: {
+                    shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Оct', 'Nov', 'Dic'],
+                    longhand: ['Enero', 'Febrero', 'Мarzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                },
+            };
+            const f_inicio = document.querySelector("#kt_fecha_inicio_flatpickr");
+            const f_fin = document.querySelector("#kt_fecha_fin_flatpickr");
+            n1 = $(f_inicio).flatpickr({
+                altInput: !0,
+                altFormat: "d/m/Y",
+                dateFormat: "Y-m-d",
+                locale: locale_flatpickr,
+                defaultDate: defaultDate,
+            });
+            n2 = $(f_fin).flatpickr({
+                altInput: !0,
+                altFormat: "d/m/Y",
+                dateFormat: "Y-m-d",
+                locale: locale_flatpickr,
+                defaultDate: defaultDate2,
+            });
+
+            var input_porciento_ejecutado = $('#porciento_ejecutado');
+            var input_presupuesto_restante = $('#presupuesto_restante');
+            var input_monto = $('#id_monto');
+
+            // Función para actualizar ambos campos
+            function actualizarCalculos(monto) {
+                input_porciento_ejecutado.val(calcular_porciento(monto));
+                input_presupuesto_restante.val(calcular_monto_restante(monto));
+            }
+
+            if (input_monto.val()) {
+                actualizarCalculos(input_monto.val());
+            }
+
+            input_monto.on('keyup change', function () {
+                let monto = $(this).val();
+                actualizarCalculos(monto);
+            });
+
+            function calcular_porciento(monto) {
+                total = {{ presupuesto_planificado.monto }};
+                porciento = (monto / total) * 100;
+                return parseFloat(porciento).toFixed(2);
+            }
+
+            function calcular_monto_restante(monto) {
+                total = {{ presupuesto_planificado.get_monto_restante }};
+                restante = total - parseFloat(monto || 0);
+                return parseFloat(restante).toFixed(2);
+            }
+        })
+
+
+    </script>
+{% endblock %}

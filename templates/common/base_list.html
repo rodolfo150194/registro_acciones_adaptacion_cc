@@ -1,0 +1,48 @@
+{% extends 'layout/base.html' %}
+{% load static i18n %}
+{% block css %}
+    <link href="{% static 'assets/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"
+          type="text/css"/>
+{% endblock %}
+{% block breadcumb %}
+    {% include 'layout/breadcumbs.html' %}
+{% endblock %}
+{% block content %}
+    <div class="card card-flush">
+        <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+            <div class="card-title">
+                <div class="d-flex align-items-center position-relative my-1">
+                    <input type="text" data-kt-filter="search" class="form-control w-250px "
+                           placeholder="Buscar"/>
+                </div>
+                <div id="kt_datatable_example_1_export" class="d-none"></div>
+            </div>
+
+            <div class="card-toolbar flex-row-fluid justify-content-end gap-5">
+                {% block toolbar %}
+
+                {% endblock %}
+            </div>
+        </div>
+        <div class="card-body pt-0">
+            <table class="table align-middle table-row-dashed fs-5 gy-5 dataTable no-footer"
+                   id="kt_datatable_acciones_adaptacion">
+                <thead class="fw-bold">
+                {% block thead %}
+
+                {% endblock %}
+                </thead>
+                <tbody class="fw-semibold text-gray-600">
+                {% block tbody %}
+
+                {% endblock %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+    <script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    {% block js_table %}
+    {% endblock %}
+{% endblock %}

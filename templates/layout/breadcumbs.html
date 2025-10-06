@@ -1,0 +1,43 @@
+<div id="kt_app_toolbar" class="app-toolbar pt-7 pt-lg-10">
+    <!--begin::Toolbar wrapper-->
+    <div class="app-toolbar-wrapper d-flex flex-stack flex-wrap gap-4 w-100">
+        <!--begin::Page title-->
+        <div class="page-title d-flex flex-column justify-content-center gap-1 me-3 ms-1">
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7">
+                {% for item in breadcrumbs %}
+                    <li class="breadcrumb-item {% if item.active %}text-gray-500{% else %}text-gray-700 fw-bold lh-1 mx-n1{% endif %}">
+                        {% if item.url %}
+                            <a href="{{ item.url }}" class="text-hover-primary">
+                                {% if item.icon %}
+                                    <i class="ki-outline {{ item.icon }} text-gray-700 fs-6"></i>
+                                {% else %}
+                                    {{ item.name }}
+                                {% endif %}
+                            </a>
+                        {% else %}
+                            {{ item.name }}
+                        {% endif %}
+                    </li>
+                    {% if not forloop.last %}
+                        <li class="breadcrumb-item">
+                            <i class="ki-outline ki-right fs-7 text-gray-700"></i>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+            <h1 class="page-heading d-flex flex-column justify-content-center text-gray-900 fw-bold fs-3 ms-n1">
+                {{ title_head }}
+            </h1>
+        </div>
+        <!--end::Page title-->
+        <!--begin::Actions-->
+        {% if crear_url %}
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <a href="{{ crear_url }}" class="btn btn-flex btn-primary h-40px fs-7 fw-bold"
+                   data-kt-translate="btn-create">Nuevo</a>
+            </div>
+        {% endif %}
+        <!--end::Actions-->
+    </div>
+    <!--end::Toolbar wrapper-->
+</div>

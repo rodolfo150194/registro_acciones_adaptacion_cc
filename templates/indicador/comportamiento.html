@@ -1,0 +1,906 @@
+{% extends 'layout/base.html' %}
+{% load static i18n %}
+{% block css_vendor %}
+    <link href="{% static 'assets/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"
+          type="text/css"/>
+{% endblock %}
+{% block breadcumb %}
+    {% include 'layout/breadcumbs.html' %}
+{% endblock %}
+{% block content %}
+    {#    <div class="row g-5 g-xl-8">#}
+    <!--begin::Listado resultados-->
+    <div class="d-flex flex-column flex-md-row align-items-center mb-10">
+        <div class="m-5 d-flex justify-content-start">
+            <div class="border border-primary border-2 border-dashed rounded min-w-100px py-2 px-4 me-6 mb-3 text-center">
+                <!--begin::Date-->
+                <span class="fs-3 fw-bold">INDICADOR</span><br>
+                <span class="fs-6 text-gray-700 ">{{ indicador.nombre }}</span>
+                <!--end::Date-->
+            </div>
+            <div class="border border-primary border-2 border-dashed rounded min-w-100px py-2 px-4 me-6 mb-3 text-center">
+                <!--begin::Date-->
+                <span class="fs-3 fw-bold">ECUACIÓN</span><br>
+                <span class="fs-6 text-gray-700 ">{{ indicador.formula }}</span>
+                <!--end::Date-->
+            </div>
+        </div>
+        {% if next_measurement %}
+            <div class="flex-grow-1">
+                <div class="alert alert-warning text-dark d-flex align-items-center">
+                    <i class="ki-duotone ki-information fs-2hx text-warning me-3">
+                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                    </i>
+                    <div>
+                        <strong>Próxima medición {% if next_measurement.urgente %}URGENTE{% else %}programada{% endif %}
+                            :</strong>
+                        {{ next_measurement.fecha|date:'d M Y' }} ({{ next_measurement.frecuencia }})
+                        <div class="fs-7 text-muted">
+                            {% if next_measurement.dias_restantes > 0 %}
+                                Faltan {{ next_measurement.dias_restantes }} días
+                            {% else %}
+                                Medición vencida hace {{ next_measurement.dias_restantes|add:"-1" }} días
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="card card-flush mb-5 mb-xl-8">
+        <!--begin::Card header-->
+        <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+            <!--begin::Card title-->
+            <div class="card-title">
+                <!--begin::Search-->
+                <div class="d-flex align-items-center position-relative my-1">
+                    <input type="text" data-kt-filter="search" class="form-control form-control-solid w-250px "
+                           placeholder="Buscar"/>
+                </div>
+                <!--end::Search-->
+                <!--begin::Export buttons-->
+                <div id="kt_datatable_example_1_export" class="d-none"></div>
+                <!--end::Export buttons-->
+            </div>
+
+            <!--end::Card title-->
+            <!--begin::Card toolbar-->
+            <div class="card-toolbar flex-row-fluid justify-content-end gap-5">
+                <a href="{{ crear_url }}" class="btn btn-primary"
+                   data-kt-menu-placement="bottom-end">
+                    <i class="ki-duotone ki-plus fs-2"><span class="path1"></span><span
+                            class="path2"></span></i>
+                    Nuevo
+                </a>
+                <button type="button" class="btn btn-secondary" data-kt-menu-trigger="click"
+                        data-kt-menu-placement="bottom-end">
+                    <i class="ki-duotone ki-exit-up fs-2"><span class="path1"></span><span
+                            class="path2"></span></i>
+                    Exportar
+                </button>
+                <div id="kt_datatable_example_export_menu"
+                     class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-danger fw-semibold fs-7 w-200px py-4"
+                     data-kt-menu="true">
+                    <!--begin::Menu item-->
+                    <div class="menu-item px-3">
+                        <a href="#" class="menu-link px-3" data-kt-export="copy">
+                            Copiar Tabla
+                        </a>
+                    </div>
+                    <!--end::Menu item-->
+                    <!--begin::Menu item-->
+                    <div class="menu-item px-3">
+                        <a href="#" class="menu-link px-3" data-kt-export="excel">
+                            Exportar a Excel
+                        </a>
+                    </div>
+                    <!--end::Menu item-->
+                    <!--begin::Menu item-->
+                    <div class="menu-item px-3">
+                        <a href="#" class="menu-link px-3" data-kt-export="csv">
+                            Exportar a CSV
+                        </a>
+                    </div>
+                    <!--end::Menu item-->
+                    <!--begin::Menu item-->
+                    <div class="menu-item px-3">
+                        <a href="#" class="menu-link px-3" data-kt-export="pdf">
+                            Exportar a PDF
+                        </a>
+                    </div>
+                    <!--end::Menu item-->
+                </div>
+                <div id="kt_datatable_example_buttons" class="d-none"></div>
+            </div>
+            <!--end::Card toolbar-->
+        </div>
+        <!--end::Card header-->
+        <!--begin::Card body-->
+        <div class="card-body pt-0">
+            <!--begin::Table-->
+            <div id="kt_datatable_p" class="dataTables_wrapper dt-bootstrap4 no-footer">
+                <div class="table-responsive">
+                    <table class="table align-middle table-row-dashed fs-5 gy-5 dataTable no-footer"
+                           id="kt_datatable_resultados_indicadores_adaptacion">
+                        <thead>
+                        <tr>
+
+                            <th class="fw-bold w-15">Fecha</th>
+                            <th class="fw-bold w-50">Variables</th>
+                            <th class="fw-bold">Valor</th>
+
+                            {#                            <th class="fw-bold p-2">Fuente</th>#}
+                            <th class="fw-bold text-center">Observación</th>
+                            <th class="fw-bold text-center">Opciones</th>
+                        </tr>
+                        </thead>
+                        <tbody class="fw-semibold text-gray-600">
+
+                        {% for element in dict_object_list %}
+                            <tr>
+
+                                <td class=" fw-bold">{{ element.fecha | date:'d-m-Y' }}</td>
+                                <td class=" fw-bold">
+                                    {% for v in element.resultadovariable_set.all %}
+                                        {{ v.variable_indicador.nombre }} = {{ v.valor }}
+                                        {% if forloop.last %}{% else %},{% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td class=" fw-bold">{{ element.valor | floatformat:2 }}</td>
+                                {#                                <td class="p-2 ">#}
+                                {#                                    {% if element.fuente_dato %}{{ element.fuente_dato }}{% else %}-{% endif %}</td>#}
+                                <td class="text-center fw-bold">
+                                    {% if element.observacion %}{{ element.observacion }}{% else %}
+                                        - {% endif %}</td>
+                                <td class="text-center">
+                                    <a href="{% url 'registro:editar_resultado_indicador' accion.id indicador.id element.id %}"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="Editar medición">
+                                        <i class="ki-duotone ki-notepad-edit fs-2x">
+                                            <div class="path1"></div>
+                                            <div class="path2"></div>
+                                            <div class="path3"></div>
+                                        </i>
+                                    </a>
+                                    <a type="button" data-bs-toggle="modal"
+                                       data-bs-target="#kt_modal_{{ element.id }}"
+                                       data-bs-placement="top"
+                                       title="Eliminar medición">
+                                        <i class="ki-duotone ki-trash fs-2x">
+                                            <div class="path1"></div>
+                                            <div class="path2"></div>
+                                            <div class="path3"></div>
+                                            <div class="path4"></div>
+                                            <div class="path5"></div>
+                                        </i>
+                                    </a>
+                                    <div class="modal fade" tabindex="-1"
+                                         id="kt_modal_{{ element.id }}">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h3 class="modal-title">
+                                                        Eliminar resultado de [{{ indicador }}]</h3>
+
+                                                    <!--begin::Close-->
+                                                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2"
+                                                         data-bs-dismiss="modal"
+                                                         aria-label="Close">
+                                                        <i class="ki-duotone ki-cross fs-1"><span
+                                                                class="path1"></span><span
+                                                                class="path2"></span></i>
+                                                    </div>
+                                                    <!--end::Close-->
+                                                </div>
+
+                                                <div class="modal-body">
+                                                    <p class="text-center fs-4">
+                                                        Estas segura/o de eliminar este resultado?.</p>
+                                                </div>
+                                                <form method="post" id="form_delete"
+                                                      action="{% url 'registro:eliminar_resultado_indicador' accion.id indicador.id element.id %}">
+                                                    {% csrf_token %}
+                                                    <div class="modal-footer">
+                                                        <button type="button"
+                                                                class="btn btn-light"
+                                                                data-bs-dismiss="modal">
+                                                            No
+                                                        </button>
+                                                        <button type="submit"
+                                                                class="btn btn-primary">
+                                                            Si
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+            <div class="d-flex justify-content-center mt-3">
+                <a href="{% url 'registro:lista_accion' %}"
+                   class="btn btn-light-primary me-5">Finalizar</a>
+                <a href="{{ url_cancel }}" class="btn btn-light me-5">Atras</a>
+
+            </div>
+            <!--end::Table-->
+        </div>
+        <!--end::Card body-->
+    </div>
+    <span id="kt_typedjs_example_1" class="fs-1 fw-bold"></span>
+    <!--end::Tables Widget 5-->
+    {#    </div>#}
+    <!--end::Comportamiento-->
+
+
+
+    <!-- Dashboard de estadísticas -->
+    <div class="row g-3 mb-10">
+        <!-- Valor Actual -->
+        <div class="col-md-6">
+            <div class="card card-flush p-5">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="fs-6 fw-semibold text-gray-500">VALOR ACTUAL</span>
+                    <span class="badge badge-{{ performance_level.color }}">{{ performance_level.texto }}</span>
+                </div>
+                <div class="fs-2hx fw-bold text-gray-900 mb-2">
+                    {{ ultimo_resultado.valor|floatformat:2 }}
+                    <span class="fs-4 text-gray-500">{{ indicador.unidad_medida.nombre }}</span>
+                </div>
+                <div class="d-flex align-items-center">
+                    {% if variacion_anterior_ultimo_resultado > 0 %}
+                        <i class="ki-duotone ki-arrow-up fs-5 text-success me-2"></i>
+                        <span class="text-success">+{{ variacion_anterior_ultimo_resultado|floatformat:1 }}%</span>
+                    {% elif variacion_anterior_ultimo_resultado < 0 %}
+                        <i class="ki-duotone ki-arrow-down fs-5 text-danger me-2"></i>
+                        <span class="text-danger">{{ variacion_anterior_ultimo_resultado|floatformat:1 }}%</span>
+                    {% else %}
+                        <i class="ki-duotone ki-minus fs-5 text-gray-500 me-2"></i>
+                        <span class="text-gray-500">Sin cambio</span>
+                    {% endif %}
+                    <span class="text-gray-500 ms-2">vs anterior</span>
+                </div>
+                <div class="fs-7 text-gray-500 mt-2">Última medición: {{ ultimo_resultado.fecha|date:'d M Y' }}</div>
+            </div>
+        </div>
+        <!-- Tendencia General -->
+        <div class="col-md-3">
+            <div class="card card-flush p-5 h-100">
+                <div class="fs-6 fw-semibold text-gray-500 mb-3">TENDENCIA GENERAL</div>
+                <div class="fs-2hx fw-bold text-gray-900 mb-2">
+                    {% if variacion_porcentual >= 0 %}+{% endif %}{{ variacion_porcentual|floatformat:1 }}%
+                </div>
+                <div class="fs-7 text-gray-500 mb-2">
+                    {% if projection.tendencia == 'Creciente' %}
+                        <i class="ki-duotone ki-arrow-up text-success"></i> Mejora constante
+                    {% elif projection.tendencia == 'Decreciente' %}
+                        <i class="ki-duotone ki-arrow-down text-danger"></i> Declive detectado
+                    {% else %}
+                        <i class="ki-duotone ki-minus text-warning"></i> Tendencia estable
+                    {% endif %}
+                </div>
+                <div class="fs-7 text-gray-500">
+                    Velocidad: {{ advanced_statistics.velocidad_mensual|floatformat:2 }}/mes
+                </div>
+            </div>
+        </div>
+        <!-- Consistencia -->
+        <div class="col-md-3">
+            <div class="card card-flush p-5 h-100 text-center">
+                <div class="fs-6 fw-semibold text-gray-500 mb-2">CONSISTENCIA</div>
+                <div class="fs-2x fw-bold text-gray-900">{{ advanced_statistics.coef_variacion|floatformat:1 }}%</div>
+                <div class="fs-7 text-gray-500">Variabilidad</div>
+                <div class="d-flex gap-5 justify-content-center align-items-center">
+
+                    <span class="fs-base badge badge-light-{% if advanced_statistics.coef_variacion < 10 %}success{% elif advanced_statistics.coef_variacion < 20 %}warning{% else %}danger{% endif %} mt-2">
+                        {{ advanced_statistics.consistencia_nivel }}
+                        </span>
+                </div>
+            </div>
+        </div>
+        {% if performance_ranking %}
+            <div class="col-md-4">
+                <div class="card card-flush p-5">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="fs-6 fw-semibold text-gray-500">RANKING DE DESEMPEÑO</span>
+                        <span class="badge badge-light-{{ performance_ranking.nivel_desempeño.color }}">
+                {{ performance_ranking.nivel_desempeño.descripcion }}
+            </span>
+                    </div>
+                    <div class="fs-2hx fw-bold text-gray-900 mb-2">
+                        #{{ performance_ranking.posicion }}
+                    </div>
+                    <div class="fs-6 text-gray-500 mb-3">
+                        de {{ performance_ranking.total_indicadores }} indicadores totales
+                    </div>
+                    <div class="row g-2 fs-7 text-gray-500">
+                        <div class="col-6">
+                            <strong>Percentil:</strong> {{ performance_ranking.percentil }}%
+                        </div>
+                        <div class="col-6">
+                            <strong>Score:</strong> {{ performance_ranking.score_actual }}/100
+                        </div>
+                        <div class="col-6">
+                            <strong>Promedio:</strong> {{ performance_ranking.score_promedio|floatformat:1 }}
+                        </div>
+                        <div class="col-6">
+                            <strong>Mejor:</strong> {{ performance_ranking.mejor_score|floatformat:1 }}
+                        </div>
+                    </div>
+
+                    <!-- Barra de progreso comparativa -->
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between fs-8 text-gray-400 mb-1">
+                            <span>0</span>
+                            <span>50</span>
+                            <span>100</span>
+                        </div>
+                        <div class="progress bg-light-secondary mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-{{ performance_ranking.nivel_desempeño.color }}"
+                                 style="width: {{ performance_ranking.score_actual }}%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between fs-8 text-gray-600">
+                            <span>Tu indicador</span>
+                            <span>{{ performance_ranking.score_actual }}/100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Progreso hacia Meta -->
+        {% if meta_progress %}
+            <div class="col-md-4 ">
+                <div class="card card-flush p-5 h-100">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="fs-6 fw-semibold text-gray-500">PROGRESO HACIA META</span>
+                        <span class="badge badge-{{ detailed_meta_progress.nivel_riesgo.color }}">
+                {{ detailed_meta_progress.nivel_riesgo.descripcion }}
+            </span>
+                    </div>
+                    <div class="fs-2hx fw-bold text-gray-900 mb-2">
+                        {{ detailed_meta_progress.progreso_porcentaje|floatformat:1 }}%
+                    </div>
+                    <div class="progress bg-light-primary mb-3" style="height: 10px;">
+                        <div class="progress-bar bg-primary"
+                             style="width: {{ detailed_meta_progress.progreso_porcentaje }}%"></div>
+                    </div>
+                    <div class="row g-2 fs-7 text-gray-500">
+                        <div class="col-6">
+                            <strong>Meta:</strong> {{ detailed_meta_progress.meta_valor }} {{ detailed_meta_progress.unidad_medida }}
+                        </div>
+                        <div class="col-6">
+                            <strong>Actual:</strong> {{ detailed_meta_progress.valor_actual }} {{ detailed_meta_progress.unidad_medida }}
+                        </div>
+                        <div class="col-6">
+                            <strong>Falta:</strong> {{ detailed_meta_progress.distancia_meta }} {{ detailed_meta_progress.unidad_medida }}
+                        </div>
+                        <div class="col-6">
+                            {% if detailed_meta_progress.tiempo_estimado %}
+                                <strong>Tiempo est.:</strong> {{ detailed_meta_progress.tiempo_estimado.meses }} meses
+                            {% else %}
+                                <strong>Tiempo est.:</strong> N/A
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if detailed_meta_progress.meta_fecha_limite %}
+                        <div class="fs-7 text-gray-500 mt-2">
+                            <strong>Fecha límite:</strong> {{ detailed_meta_progress.meta_fecha_limite|date:'d M Y' }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        <div class="col-md-4">
+            <div class="card card-flush p-5 h-100 text-center">
+                <div class="fs-6 fw-semibold text-gray-500 mb-2">RANGO</div>
+                <div class="fs-6 fw-bold text-gray-900">
+                    <span class="text-danger fs-2x">{{ advanced_statistics.minimo|floatformat:2 }}</span> -
+                    <span class="text-success fs-2x">{{ advanced_statistics.maximo|floatformat:2 }}</span>
+                </div>
+                <div class="fs-7 text-gray-500">Mín - Máx</div>
+                <hr>
+                <div class="fs-6 fw-semibold text-gray-500 mb-2">PROMEDIO</div>
+                <div class="fs-2x fw-bold text-gray-900">{{ advanced_statistics.promedio|floatformat:2 }}</div>
+                <div class="fs-7 text-gray-500">Histórico</div>
+            </div>
+        </div>
+
+
+    </div>
+        <div class="row g-5 g-xl-8">
+            <div class="col-md-12">
+                <div class="card card-flush mb-5 mb-xl-8">
+
+                    <div class="card-body pt-5">
+                        <div id="chart_resultados_indicador_line" class=""></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <div class="row g-5 g-xl-8 mb-10">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div id="chart_resultados_indicador_enhanced"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de gráficos adicionales - Agregar después del gráfico principal -->
+    <div class="row g-5 g-xl-8">
+        <!-- Gráfico de distribución -->
+        {% if object_list.count >= 5 %}
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="ki-duotone ki-chart-simple fs-2 text-primary me-2"></i>
+                            Distribución de Valores
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="chart_distribution"></div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Panel de Insights Mejorado -->
+    {% if insights %}
+        <div class="card mb-5">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ki-duotone ki-abstract-26 fs-2 text-primary me-2"></i>
+                    Análisis Inteligente y Recomendaciones
+                </h3>
+                <div class="card-toolbar">
+                    <span class="badge badge-light-primary">{{ insights|length }} insight{{ insights|length|pluralize }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% for insight in insights %}
+                    <div class="d-flex align-items-start py-4 {% if not forloop.last %}border-bottom border-gray-300{% endif %}">
+                        <div class="symbol symbol-35px symbol-circle me-4">
+                            <div class="symbol-label bg-light-{% if insight.nivel == 'excelente' %}success{% elif insight.nivel == 'bueno' %}primary{% elif insight.nivel == 'regular' %}warning{% else %}danger{% endif %}">
+                                <i class="ki-duotone {{ insight.icono }} fs-2 text-{% if insight.nivel == 'excelente' %}success{% elif insight.nivel == 'bueno' %}primary{% elif insight.nivel == 'regular' %}warning{% else %}danger{% endif %}">
+                                    <div class="path1"></div>
+                                    <div class="path2"></div>
+                                    <div class="path3"></div>
+                                    <div class="path4"></div>
+                                    <div class="path5"></div>
+                                </i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="fw-bold text-gray-900 fs-6">{{ insight.titulo }}</div>
+                                <span class="badge badge-secondary{% if insight.nivel == 'excelente' %}success{% elif insight.nivel == 'bueno' %}primary{% elif insight.nivel == 'regular' %}warning{% else %}danger{% endif %} ms-2">
+                                    {% if insight.nivel == 'excelente' %}Excelente{% elif insight.nivel == 'bueno' %}
+                                        Bueno{% elif insight.nivel == 'regular' %}Regular{% else %}Crítico{% endif %}
+                                </span>
+                            </div>
+                            <div class="text-gray-700 fs-7 mb-2">{{ insight.descripcion }}</div>
+                            {% if insight.accion_recomendada %}
+                                <div class="d-flex align-items-center">
+                                    <i class="ki-duotone ki-arrow-right fs-7 text-primary me-1">
+                                        <div class="path1"></div>
+                                        <div class="path2"></div>
+                                        <div class="path3"></div>
+                                        <div class="path4"></div>
+                                        <div class="path5"></div>
+                                    </i>
+                                    <span class="text-primary fs-8 fw-semibold">{{ insight.accion_recomendada }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-brain"></i> Análisis Inteligente con IA
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 mb-3">
+                        <button class="btn btn-primary" onclick="analizarIndicador('individual')">
+                            <i class="fas fa-chart-line"></i> Análisis General
+                        </button>
+                        <button class="btn btn-info" onclick="analizarIndicador('tendencias')">
+                            <i class="fas fa-trending-up"></i> Análisis de Tendencias
+                        </button>
+                        {% if indicador.meta_valor %}
+                            <button class="btn btn-success" onclick="analizarIndicador('meta')">
+                                <i class="fas fa-bullseye"></i> Progreso de Meta
+                            </button>
+                        {% endif %}
+                    </div>
+
+                    <div id="loading-analisis" class="text-center" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Analizando...</span>
+                        </div>
+                        <p class="mt-2">Analizando indicador con IA...</p>
+                    </div>
+
+                    <div id="resultado-analisis" class="alert" style="display: none;">
+                        <h6 class="alert-heading">Resultado del Análisis</h6>
+                        <div id="analisis-content"></div>
+                    </div>
+
+                    <div id="error-analisis" class="alert alert-danger" style="display: none;">
+                        <strong>Error:</strong> <span id="error-message"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+{% block js %}
+    <script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script src="{% static 'assets/js/datatable_resultado_indicador.js' %}"></script>
+    <script>
+        $(function () {
+
+            var chart_resultados_indicador_line = new ApexCharts(document.querySelector("#chart_resultados_indicador_line"), {{ chart_data_line|safe }});
+            chart_resultados_indicador_line.render();
+
+            // ====================================================================
+            // GRÁFICO PRINCIPAL MEJORADO
+            // ====================================================================
+            var chartData = {{ chart_data_line|safe }};
+
+            // Configuración mejorada del gráfico principal
+            var enhancedChartConfig = {
+                ...chartData,
+                chart: {
+                    ...chartData.chart,
+                    toolbar: {
+                        show: true,
+                        tools: {
+                            download: true,
+                            selection: true,
+                            zoom: true,
+                            zoomin: true,
+                            zoomout: true,
+                            pan: true,
+                            reset: true
+                        }
+                    },
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800
+                    }
+                },
+                stroke: {
+                    curve: 'smooth',
+                    width: 3
+                },
+                markers: {
+                    size: 6,
+                    strokeWidth: 2,
+                    fillOpacity: 1,
+                    strokeOpacity: 1,
+                    hover: {
+                        size: 8
+                    }
+                },
+                tooltip: {
+                    shared: true,
+                    intersect: false,
+                    theme: 'light',
+                    style: {
+                        fontSize: '12px'
+                    },
+                    y: {
+                        formatter: function (val) {
+                            return val + ' {{ indicador.unidad_medida.nombre }}';
+                        }
+                    }
+                },
+                grid: {
+                    borderColor: '#e7e7e7',
+                    strokeDashArray: 3,
+                    xaxis: {lines: {show: true}},
+                    yaxis: {lines: {show: true}},
+                    padding: {top: 20, right: 20, bottom: 20, left: 20}
+                }
+            };
+
+            // ====================================================================
+            // GRÁFICO AVANZADO CON PROYECCIÓN Y META
+            // ====================================================================
+            var advancedChartConfig = {
+                series: [...chartData.series],
+                chart: {
+                    height: 400,
+                    type: 'linea',
+                    toolbar: {show: true},
+                    zoom: {enabled: true},
+                    animations: {enabled: true, speed: 1000}
+                },
+                title: {
+                    text: 'Análisis Completo - {{ indicador.nombre }}',
+                    style: {
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        color: '#181C32'
+                    }
+                },
+                colors: ['#1B84FF', '#f59e0b', '#ef4444', '#10b981'],
+                stroke: {
+                    curve: 'smooth',
+                    width: [3, 2, 2, 2],
+                    dashArray: [0, 5, 8, 0]
+                },
+                markers: {
+                    size: [6, 4, 4, 4],
+                    hover: {size: [8, 6, 6, 6]}
+                },
+                xaxis: {
+                    categories: chartData.xaxis.categories,
+                    labels: {
+                        style: {fontSize: '11px'},
+                        rotate: -45
+                    }
+                },
+                yaxis: {
+                    title: {
+                        text: '{{ indicador.unidad_medida.nombre }}',
+                        style: {fontSize: '12px', fontWeight: 'bold'}
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'center',
+                    fontSize: '12px',
+                    markers: {width: 12, height: 12}
+                },
+                tooltip: {
+                    shared: true,
+                    intersect: false,
+                    y: {
+                        formatter: function (val, opts) {
+                            if (val === null) return 'Proyectado';
+                            return val + ' {{ indicador.unidad_medida.nombre }}';
+                        }
+                    }
+                },
+                annotations: {
+                    {% if detailed_meta_progress and detailed_meta_progress.meta_fecha_limite %}
+                        xaxis: [{
+                            x: '{{ detailed_meta_progress.meta_fecha_limite|date:"d-m-Y" }}',
+                            borderColor: '#ef4444',
+                            label: {
+                                text: 'Fecha Límite Meta',
+                                style: {color: '#fff', background: '#ef4444'}
+                            }
+                        }]
+                    {% endif %}
+                }
+            };
+
+            // Agregar proyección si existe
+            {% if projection %}
+                var projectionData = Array({{ object_list.count }}).fill(null);
+                projectionData.push({{ projection.proximo_valor }});
+
+                advancedChartConfig.series.push({
+                    name: 'Proyección',
+                    data: projectionData,
+                    type: 'linea',
+                    color: '#f59e0b'
+                });
+
+                // Agregar categoría para la proyección
+                advancedChartConfig.xaxis.categories.push('Proyección');
+            {% endif %}
+
+            // Agregar línea de meta si existe
+            {% if meta_progress %}
+                advancedChartConfig.series.push({
+                    name: 'Meta ({{ meta_progress.meta_valor }} {{ indicador.unidad_medida.nombre }})',
+                    data: Array(advancedChartConfig.xaxis.categories.length).fill({{ meta_progress.meta_valor }}),
+                    type: 'line',
+                    color: '#ef4444'
+                });
+            {% endif %}
+
+            // ====================================================================
+            // RENDERIZADO DE GRÁFICOS
+            // ====================================================================
+
+            // Gráfico principal mejorado
+            var chartPrincipal = new ApexCharts(
+                document.querySelector("#chart_resultados_indicador_line"),
+                enhancedChartConfig
+            );
+            chartPrincipal.render();
+
+            // Gráfico avanzado con análisis completo
+            var chartAvanzado = new ApexCharts(
+                document.querySelector("#chart_resultados_indicador_enhanced"),
+                advancedChartConfig
+            );
+            chartAvanzado.render();
+
+            // ====================================================================
+            // GRÁFICO DE DISTRIBUCIÓN (NUEVO)
+            // ====================================================================
+            {% if object_list.count >= 5 %}
+                var distributionConfig = {
+                    series: [{
+                        name: 'Frecuencia',
+                        data: [
+                            {% for result in object_list %}
+                                {{ result.valor|floatformat:2 }},
+                            {% endfor %}
+                        ]
+                    }],
+                    chart: {
+                        height: 300,
+                        type: 'histogram',
+                        toolbar: {show: false}
+                    },
+                    title: {
+                        text: 'Distribución de Valores',
+                        style: {fontSize: '16px', fontWeight: 'bold'}
+                    },
+                    colors: ['#1B84FF'],
+                    plotOptions: {
+                        bar: {
+                            borderRadius: 4,
+                            columnWidth: '70%'
+                        }
+                    },
+                    dataLabels: {enabled: false},
+                    xaxis: {
+                        title: {text: '{{ indicador.unidad_medida.nombre }}'}
+                    },
+                    yaxis: {
+                        title: {text: 'Frecuencia'}
+                    }
+                };
+
+                var chartDistribution = new ApexCharts(
+                    document.querySelector("#chart_distribution"),
+                    distributionConfig
+                );
+                chartDistribution.render();
+            {% endif %}
+
+
+
+            // ====================================================================
+            // CONFIGURACIÓN RESPONSIVE
+            // ====================================================================
+            function makeChartsResponsive() {
+                [chartPrincipal, chartAvanzado].forEach(chart => {
+                    if (chart) {
+                        chart.updateOptions({
+                            chart: {
+                                height: window.innerWidth < 768 ? 250 : 350
+                            },
+                            legend: {
+                                position: window.innerWidth < 768 ? 'bottom' : 'top'
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Aplicar responsive al cargar y redimensionar
+            makeChartsResponsive();
+            window.addEventListener('resize', makeChartsResponsive);
+
+        });
+        const indicadorId = {{ indicador.id }};
+
+        function analizarIndicador(tipoAnalisis) {
+            // Ocultar mensajes anteriores
+            document.getElementById('resultado-analisis').style.display = 'none';
+            document.getElementById('error-analisis').style.display = 'none';
+            document.getElementById('loading-analisis').style.display = 'block';
+
+            let url = '';
+
+            switch (tipoAnalisis) {
+                case 'individual':
+                    url = `/ai/indicadores/${indicadorId}/analizar/`;
+                    break;
+                case 'tendencias':
+                    url = `/ai/indicadores/${indicadorId}/tendencias/`;
+                    break;
+                case 'meta':
+                    url = `/ai/indicadores/${indicadorId}/progreso-meta/`;
+                    break;
+                default:
+                    url = `/ai/indicadores/${indicadorId}/analizar/`;
+            }
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading-analisis').style.display = 'none';
+
+                    if (data.exito) {
+                        const resultadoDiv = document.getElementById('resultado-analisis');
+                        const contenidoDiv = document.getElementById('analisis-content');
+
+                        // Determinar qué contenido mostrar según el tipo
+                        let contenido = '';
+                        if (tipoAnalisis === 'individual') {
+                            contenido = data.analisis;
+                        } else if (tipoAnalisis === 'tendencias') {
+                            contenido = data.analisis_tendencias;
+                        } else if (tipoAnalisis === 'meta') {
+                            contenido = data.analisis_meta;
+                        }
+
+                        contenidoDiv.innerHTML = formatearAnalisis(contenido);
+                        resultadoDiv.className = 'alert alert-success';
+                        resultadoDiv.style.display = 'block';
+                    } else {
+                        mostrarError(data.error);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('loading-analisis').style.display = 'none';
+                    mostrarError('Error al conectar con el servidor: ' + error.message);
+                });
+        }
+
+        function formatearAnalisis(texto) {
+            // Convertir saltos de línea y formatear el texto
+            return texto.replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/^\d+\./gm, '<br><strong><p><strong>Tipo:</strong> {{ indicador.tipo_indicador.nombre }}</p><p><strong>Unidad:</strong>{{ indicador.unidad_medida}} < /strong>')
+                .replace(/^- /gm, '<br>•');
+        };
+
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('error-analisis');
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.textContent = mensaje;
+            errorDiv.style.display = 'block';
+        }
+
+        // Función para exportar el análisis a PDF (opcional)
+        function exportarAnalisis() {
+            const contenido = document.getElementById('analisis-content').innerText;
+            if (!contenido) {
+                alert('No hay análisis para exportar');
+                return;
+            }
+
+            // Aquí puedes implementar la lógica de exportación
+            console.log('Exportando análisis...', contenido);
+        }
+    </script>
+{% endblock %}

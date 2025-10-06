@@ -1,0 +1,127 @@
+{% extends 'layout/base.html' %}
+{% load static i18n %}
+{% block css_vendor %}
+    <link href="{% static 'assets/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"
+          type="text/css"/>
+{% endblock %}
+{% block breadcumb %}
+    {% include 'layout/breadcumbs.html' %}
+{% endblock %}
+{% block content %}
+    <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+        <form method="post" enctype="multipart/form-data" id="kt_sign_in_form">
+            {% csrf_token %}
+
+            <div class="d-flex flex-column gap-7 gap-lg-10">
+                <div class="card card-flush py-4">
+                    <div class="card-header justify-content-between align-content-center">
+                        <div class="card-title ">
+                            <h2>Medir variable del indicador {{ indicador.nombre }}</h2>
+                        </div>
+
+                        <h4>Resultado anterior: [{{ indicador.get_ultimo_valor }}]</h4>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="mb-5 fv-plugins-icon-container">
+                            <div class="row d-flex">
+                                {{ formset_variables.management_form }}
+                                {% for form in formset_variables %}
+                                    <div class="col-lg-4">
+                                        <div class="mb-3">
+                                            {{ formset_variables.non_field_errors }}
+                                            <label class="form-label">{{ form.variable_indicador.value }}</label>
+                                            {{ form.valor }}
+                                            {{ form.variable_indicador }}
+                                            {{ form.variable_indicador_id }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                        </div>
+                        <div class="mb-10 fv-row fv-plugins-icon-container w-100">
+                            <label class="form-label">{{ form.fuente_dato.label }}</label>
+                            {{ form.fuente_dato }}
+                            <div class="text-muted text-danger fs-7">{{ form.fuente_dato.errors }}</div>
+                        </div>
+                        <div class="mb-10 fv-row fv-plugins-icon-container w-100">
+                            <label class="form-label">{{ form.fecha.label }}</label>
+                            <div class="position-relative d-flex align-items-center w-100">
+                                <input class="form-control fw-bold pe-5 flatpickr-input" required
+                                       placeholder="Fecha" name="fecha"
+                                       {% if resultado.fecha %}value="{{ resultado.fecha }}"{% endif %}
+                                       id="kt_fecha_flatpickr"/>
+                                <!--end::Datepicker-->
+                                <!--begin::Icon-->
+                                <i class="ki-duotone ki-calendar fs-4 position-absolute ms-4 end-0 me-2">
+                                    <div class="path1"></div>
+                                    <div class="path2"></div>
+                                </i>
+                            </div>
+                            <div class="text-danger fs-7">{{ form.fecha.errors }}</div>
+                        </div>
+                        <div class="mb-10 fv-row fv-plugins-icon-container w-100">
+                            <label class="form-label">{{ form.observacion.label }}</label>
+                            {{ form.observacion }}
+                            <div class="text-muted text-danger fs-7">{{ form.observacion.errors }}</div>
+                        </div>
+                        <div class="d-flex justify-content-center mt-3">
+                            <a href="{{ url_cancel }}" class="btn btn-light me-5">Cancelar</a>
+                            <button type="submit" id="kt_in_submit" class="btn btn-primary">
+                                <span class="indicator-label">Guardar</span>
+                                <span class="indicator-progress">Please wait...
+											<span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                            </button>
+
+                        </div>
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </form>
+    </div>
+
+
+{% endblock %}
+{% block js %}
+    <script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script src="{% static 'assets/js/datatable_indicadores.js' %}"></script>
+    <script src="{% static 'assets/js/general.js' %}"></script>
+    <script>
+        $(function () {
+            var defaultDate = '';
+
+
+            {% if resultado.fecha %}
+                defaultDate = "{{ resultado.fecha | date:'Y-m-d' }}";
+            {% endif %}
+            const locale_flatpickr = {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+                },
+                months: {
+                    shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Оct', 'Nov', 'Dic'],
+                    longhand: ['Enero', 'Febrero', 'Мarzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                },
+            };
+            const e = document.querySelector("#kt_fecha_flatpickr");
+            n = $(e).flatpickr({
+                altInput: !0,
+                altFormat: "d/m/Y",
+                dateFormat: "Y-m-d",
+                defaultDate: defaultDate,
+                //onChange: function (e) {
+                //   a(e, t, n)
+                //{,
+                locale: locale_flatpickr
+            });
+
+        })
+
+    </script>
+{% endblock %}

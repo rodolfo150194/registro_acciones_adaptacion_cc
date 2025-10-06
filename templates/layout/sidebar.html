@@ -1,0 +1,165 @@
+<div id="kt_app_sidebar" class="app-sidebar flex-column flex-shrink-0" data-kt-drawer="true"
+     data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}"
+     data-kt-drawer-overlay="true" data-kt-drawer-width="auto" data-kt-drawer-direction="start"
+     data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
+    <!--begin::Wrapper-->
+    <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid"
+         id="kt_modal_create_app_stepper">
+        <div class="d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px">
+            <!--begin::Nav-->
+            <div class="stepper-nav">
+                <!--begin::Step 1-->
+                <div class="stepper-item {% if request.resolver_match.url_name in 'registrar_accion editar_accion' %}current{% elif current_step >= 1 %}completed{% endif %}"
+                     data-kt-stepper-element="nav">
+                    <!--begin::Wrapper-->
+                    <div class="stepper-wrapper">
+                        <!--begin::Icon-->
+                        <a href="{% if current_step != 1 %}{% url 'registro:editar_accion' accion.id %}{% endif %}"
+                           title="Acción">
+                            <div class="stepper-icon w-40px h-40px">
+                                <i class="ki-outline ki-check stepper-check fs-2"></i>
+                                <span class="stepper-number">1</span>
+                            </div>
+                        </a>
+                        <!--end::Icon-->
+
+                    </div>
+                    <!--end::Wrapper-->
+                    <!--begin::Line-->
+                    <div class="stepper-line h-40px"></div>
+                    <!--end::Line-->
+                </div>
+                <!--end::Step 1-->
+                <!--begin::Step 2-->
+                <div class="stepper-item {% if request.resolver_match.url_name in 'lista_presupuesto_planificado registrar_presupuesto_planificado editar_presupuesto_planificado' %}current{% elif current_step > 2 %}completed{% endif %}"
+                     data-kt-stepper-element="nav">
+                    <!--begin::Wrapper-->
+                    <div class="stepper-wrapper">
+                        <!--begin::Icon-->
+                        <a href="{% if accion %}{% url 'registro:lista_presupuesto_planificado' accion.id %}{% endif %}"
+                           title="Financiamiento">
+                            <div class="stepper-icon w-40px h-40px">
+                                <i class="ki-outline ki-check stepper-check fs-2"></i>
+                                <span class="stepper-number">2</span>
+                            </div>
+                        </a>
+                        <!--begin::Icon-->
+
+                    </div>
+                    <!--end::Wrapper-->
+                    <!--begin::Line-->
+                    <div class="stepper-line h-40px"></div>
+                    <!--end::Line-->
+                </div>
+                <!--end::Step 2-->
+                <!--begin::Step 2.1-->
+            {% if current_step == 2.1 %}
+                <div class="stepper-item current"
+                     data-kt-stepper-element="nav">
+                    <!--begin::Wrapper-->
+
+                    <div class="stepper-wrapper mx-2">
+                        <!--begin::Icon-->
+                        <a href="#" title="Financiamiento Ejecutado">
+                            <div class="stepper-icon w-30px h-30px">
+                                <i class="ki-outline ki-check stepper-check fs-2"></i>
+                                <span class="stepper-number fs-6">2.1</span>
+                            </div>
+                            <!--begin::Icon-->
+                        </a>
+                    </div>
+
+                    <!--end::Wrapper-->
+                    <!--begin::Line-->
+                    <div class="stepper-line h-40px"></div>
+                    <!--end::Line-->
+                </div>
+            {% endif %}
+                <!--end::Step 2.1-->
+                <!--begin::Step 3-->
+                <div class="stepper-item {% if request.resolver_match.url_name in 'lista_indicador' %}current{% elif current_step > 3 %}completed{% endif %}"
+                     data-kt-stepper-element="nav">
+                    <!--begin::Wrapper-->
+                    <div class="stepper-wrapper">
+                        <!--begin::Icon-->
+                        <a href="{% if accion %}{% url 'registro:lista_indicador' accion.id %}{% endif %}" title="Indicadores">
+                            <div class="stepper-icon w-40px h-40px">
+                                <i class="ki-outline ki-check stepper-check fs-2"></i>
+                                <span class="stepper-number ">3</span>
+                            </div>
+                        </a>
+                        <!--end::Icon-->
+
+                    </div>
+                    <!--end::Wrapper-->
+                    <!--begin::Line-->
+                    <div class="stepper-line h-40px"></div>
+                    <!--end::Line-->
+                </div>
+                <!--end::Step 3-->
+                <!--begin::Step 3.1-->
+                {% if current_step == 3.1 %}
+                <div class="stepper-item {% if request.resolver_match.url_name in 'registrar_indicador' %}current{% elif current_step > 3.1 %}completed{% endif %}"
+                     data-kt-stepper-element="nav">
+                    <!--begin::Wrapper-->
+
+                    <div class="stepper-wrapper mx-2">
+                        <!--begin::Icon-->
+                        <a href="#" title="Indicador">
+                            <div class="stepper-icon w-30px h-30px">
+                                <i class="ki-outline ki-check stepper-check fs-2"></i>
+                                <span class="stepper-number fs-6">3.1</span>
+                            </div>
+                            <!--begin::Icon-->
+                        </a>
+                    </div>
+
+                    <!--end::Wrapper-->
+                    <!--begin::Line-->
+                    <div class="stepper-line h-40px"></div>
+                    <!--end::Line-->
+                </div>
+                {% endif %}
+                <!--end::Step 2.1-->
+                <!--begin::Step 4-->
+                <div class="stepper-item" data-kt-stepper-element="nav">
+                    <!--begin::Wrapper-->
+                    <div class="stepper-wrapper">
+                        <!--begin::Icon-->
+                        <a href="" title="Cobeneficios">
+                            <div class="stepper-icon w-40px h-40px">
+                                <i class="ki-outline ki-check stepper-check fs-2"></i>
+                                <span class="stepper-number">4</span>
+                            </div>
+                        </a>
+                        <!--end::Icon-->
+
+                    </div>
+                    <!--end::Wrapper-->
+                    <!--begin::Line-->
+                    <div class="stepper-line h-40px"></div>
+                    <!--end::Line-->
+                </div>
+                <!--end::Step 4-->
+                <!--begin::Step 5-->
+                <div class="stepper-item mark-completed" data-kt-stepper-element="nav">
+                    <!--begin::Wrapper-->
+                    <div class="stepper-wrapper">
+                        <!--begin::Icon-->
+                        <a href="" title="Resultados">
+                            <div class="stepper-icon w-40px h-40px">
+                                <i class="ki-outline ki-check stepper-check fs-2"></i>
+                                <span class="stepper-number">5</span>
+                            </div>
+                        </a>
+                        <!--end::Icon-->
+
+                    </div>
+                    <!--end::Wrapper-->
+                </div>
+                <!--end::Step 5-->
+            </div>
+            <!--end::Nav-->
+        </div>
+    </div>
+</div>

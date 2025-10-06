@@ -1,0 +1,528 @@
+{% extends 'layout/base.html' %}
+{% load static i18n %}
+{% block css %}
+    <link href="{% static 'assets/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"
+          type="text/css"/>
+{% endblock %}
+{% block breadcumb %}
+    {% include 'layout/breadcumbs.html' %}
+{% endblock %}
+{% block content %}
+    <div class="card card-flush">
+        <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+            <!--begin::Card title-->
+            <div class="card-title">
+                <div class="d-flex align-items-center position-relative my-1">
+                    <input type="text" data-kt-filter="search" class="form-control w-250px "
+                           placeholder="Buscar"/>
+                    <div id="kt_datatable_example_buttons" class="d-none"></div>
+                </div>
+            </div>
+
+            <!--end::Card title-->
+            <!--begin::Card toolbar-->
+            <div class="card-toolbar flex-row-fluid justify-content-end gap-5">
+                <button type="button" class="btn btn-secondary" data-kt-menu-trigger="click"
+                        data-kt-menu-placement="bottom-end">
+                    <i class="ki-duotone ki-exit-up fs-2"><span class="path1"></span><span
+                            class="path2"></span></i>
+                    Exportar
+                </button>
+                {% include 'layout/menu_export_datatable.html' %}
+                <div class="d-flex justify-content-end gap-5">
+                    <a data-bs-toggle="modal" class="btn btn-light-primary "
+                       data-bs-target="#kt_modal_desglose">
+                        Desglose
+                    </a>
+                </div>
+
+            </div>
+            <!--end::Card toolbar-->
+        </div>
+        <div class="card-body pt-0">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="table-responsive border-bottom mb-9">
+                        <table class="table mb-3"
+                               id="kt_datatable_presupuestos_planificados_adaptacion">
+                            <thead>
+                            <tr class="border-bottom fw-bold fs-5 text-gray-900 fw-bolder">
+                                <th class="min-w-175px pb-2 ">Tipo de financiamiento</th>
+                                <th class="min-w-70px  pb-2 ">Estado</th>
+                                <th class="min-w-80px  pb-2">Moneda</th>
+                                <th class="min-w-100px  pb-2">Monto</th>
+                                <th class="min-w-100px text-center pb-2">Opciones</th>
+                            </tr>
+                            </thead>
+                            <tbody class="fw-semibold text-gray-600">
+                            {% for pp in object_list %}
+                                <tr class="fw-bold text-gray-700 fs-5">
+                                    <td class="d-flex align-items-center ">{{ pp.tipo_presupuesto.nombre }}</td>
+                                    <td>{{ pp.estado_presupuesto.nombre }}</td>
+                                    <td>{{ pp.tipo_moneda.nombre }}</td>
+                                    <td>{{ pp.format_monto }}</td>
+                                    <td class="d-flex justify-content-center gap-5">
+                                        <a type="button" data-bs-toggle="modal"
+                                           data-bs-target="#kt_modal_fuente_{{ pp.id }}"
+                                           data-bs-placement="top"
+                                           title="Ver fuente presupuesto">
+                                            <i class="ki-duotone ki-book-square fs-2x">
+                                                <div class="path1"></div>
+                                                <div class="path2"></div>
+                                                <div class="path3"></div>
+                                            </i>
+                                        </a>
+                                        <div class="modal fade" tabindex="-1"
+                                             id="kt_modal_fuente_{{ pp.id }}">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h3 class="modal-title">
+                                                            Fuente del financiamiento
+                                                            [{{ pp }}]</h3>
+
+                                                        <!--begin::Close-->
+                                                        <div class="btn btn-icon btn-sm btn-active-light-primary ms-2"
+                                                             data-bs-dismiss="modal"
+                                                             aria-label="Close">
+                                                            <i class="ki-duotone ki-cross fs-1"><span
+                                                                    class="path1"></span><span
+                                                                    class="path2"></span></i>
+                                                        </div>
+                                                        <!--end::Close-->
+                                                    </div>
+
+                                                    <div class="modal-body">
+
+                                                        <p class="text-center fs-4">
+                                                            {{ pp.fuente_financiamiento }}.</p>
+
+                                                    </div>
+
+                                                    <div class="modal-footer">
+                                                        <button type="button"
+                                                                class="btn btn-light"
+                                                                data-bs-dismiss="modal">
+                                                            Cerrar
+                                                        </button>
+
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <a href="{% url 'registro:registrar_presupuesto_ejecutado' accion.id pp.id %}"
+                                           data-bs-toggle="tooltip"
+                                           data-bs-placement="top"
+                                           title="Ejecutar presupuesto">
+                                            <i class="ki-duotone ki-dollar fs-2x">
+                                                <div class="path1"></div>
+                                                <div class="path2"></div>
+                                                <div class="path3"></div>
+                                            </i>
+                                        </a>
+                                        <a
+                                                href="{% url 'registro:editar_presupuesto_planificado' accion.id pp.id %}"
+                                                data-bs-toggle="tooltip"
+                                                data-bs-placement="top"
+                                                title="Editar presupuesto">
+                                            <i class="ki-duotone ki-notepad-edit fs-2x">
+                                                <div class="path1"></div>
+                                                <div class="path2"></div>
+                                                <div class="path3"></div>
+                                            </i>
+                                        </a>
+                                        <a type="button" data-bs-toggle="modal"
+                                           data-bs-target="#kt_modal_{{ pp.id }}"
+                                           data-bs-placement="top"
+                                           title="Eliminar presupuesto">
+                                            <i class="ki-duotone ki-trash fs-2x">
+                                                <div class="path1"></div>
+                                                <div class="path2"></div>
+                                                <div class="path3"></div>
+                                                <div class="path4"></div>
+                                                <div class="path5"></div>
+                                            </i>
+                                        </a>
+                                        <div class="modal fade" tabindex="-1"
+                                             id="kt_modal_{{ pp.id }}">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h3 class="modal-title">
+                                                            Eliminar [{{ pp }}]</h3>
+
+                                                        <!--begin::Close-->
+                                                        <div class="btn btn-icon btn-sm btn-active-light-primary ms-2"
+                                                             data-bs-dismiss="modal"
+                                                             aria-label="Close">
+                                                            <i class="ki-duotone ki-cross fs-1"><span
+                                                                    class="path1"></span><span
+                                                                    class="path2"></span></i>
+                                                        </div>
+                                                        <!--end::Close-->
+                                                    </div>
+
+                                                    <div class="modal-body">
+
+                                                        <p class="text-center fs-4">
+                                                            Estas segura/o de eliminar
+                                                            este presupuesto
+                                                            planificado?.</p>
+                                                        <p class="text-center text-black fs-6">
+                                                            <strong>Nota: </strong>Los
+                                                            presupuestos ejecutados
+                                                            asociados a este presupuesto
+                                                            planificado tambien se
+                                                            eliminarán.</p>
+                                                    </div>
+                                                    <form method="post" id="form_delete"
+                                                          action="{% url 'registro:eliminar_presupuesto_planificado' accion.id pp.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-footer">
+                                                            <button type="button"
+                                                                    class="btn btn-light"
+                                                                    data-bs-dismiss="modal">
+                                                                No
+                                                            </button>
+                                                            <button type="submit"
+                                                                    class="btn btn-primary">
+                                                                Si
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-12">
+                    <div class="m-0">
+                        <div class="d-print-none border border-dashed border-gray-300 card-rounded w-100 p-9 bg-lighten">
+                            {% for total in totales_presupuestos %}
+                                <div class="mb-6">
+                                    <h6 class="mb-6 fw-bolder text-gray-600 text-hover-success text-center border my-1 fs-5 text-gray-900 fw-bolder">{{ total.moneda }}</h6>
+                                    <div class="mb-6 d-flex">
+                                        <div class="fw-semibold text-gray-600 w-100">SUBTOTAL:</div>
+                                        <div class="align-self-end">
+                                            {% if total.subtotales %}
+                                                {% for subt in total.subtotales %}
+                                                    <div class="fw-bold text-gray-800 text-end fs-6">
+                                                        <div data-kt-countup="true"
+                                                             data-kt-countup-value="{{ subt }}"
+                                                             data-kt-countup-prefix="+$">0
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="fw-bold text-gray-800 text-end fs-6">
+                                                    0
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-2 row">
+                                        <div class="col-md-3">
+                                            <div class="fw-semibold text-gray-600">TOTAL:</div>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="fw-bold text-gray-800 text-end fs-6">
+                                                {% if total.total %}
+                                                    <div
+                                                            data-kt-countup="true"
+                                                            data-kt-countup-value="{{ total.total }}"
+                                                            data-kt-countup-prefix="$">+0
+                                                    </div>
+                                                {% else %}
+                                                    0
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex justify-content-center mt-3">
+        <a href="{% url 'registro:lista_accion' %}"
+           class="btn btn-light-primary me-5">Finalizar</a>
+        <a href="{{ next_url }}" class="btn btn-light-primary me-5">Siguiente</a>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="kt_modal_desglose">
+        <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        {{ accion }}</h3>
+
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2"
+                         data-bs-dismiss="modal"
+                         aria-label="Close">
+                        <i class="ki-duotone ki-cross fs-1"><span
+                                class="path1"></span><span
+                                class="path2"></span></i>
+                    </div>
+
+                </div>
+
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-7 border-right">
+                            {% if presupuestos_planificado.count > 0 %}
+                                {% for pp in presupuestos_planificado %}
+                                    <div class="m-0">
+
+                                        <div class="d-flex align-items-center collapsible py-3 toggle mb-0 collapsed"
+                                             data-bs-toggle="collapse"
+                                             data-bs-target="#kt_job_{{ pp.id }}"
+                                             aria-expanded="false">
+
+                                            <div class="btn btn-sm btn-icon mw-20px btn-active-color-success me-5">
+                                                <i class="ki-duotone ki-minus-square toggle-on text-success fs-1">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                </i>
+                                                <i class="ki-duotone ki-plus-square toggle-off fs-1">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                    <span class="path3"></span>
+                                                </i>
+                                            </div>
+                                            <h4 class="text-gray-700 fw-bold cursor-pointer mb-0">
+                                                {{ pp }}</h4>
+
+                                        </div>
+
+                                        <div id="kt_job_{{ pp.id }}"
+                                             class="collapse show fs-6 ms-1">
+
+                                            {% for pe in pp.presupuestos_ejecutados.all %}
+                                                <div class="timeline timeline-border-dashed">
+                                                    <!--begin::Timeline item-->
+                                                    <div class="timeline-item">
+                                                        <!--begin::Timeline line-->
+                                                        <div class="timeline-line"></div>
+                                                        <!--end::Timeline line-->
+                                                        <!--begin::Timeline icon-->
+                                                        <div class="timeline-icon">
+                                                            <i class="ki-duotone ki-calendar fs-2 text-gray-500">
+                                                                <span class="path1"></span>
+                                                                <span class="path2"></span>
+                                                                <span class="path3"></span>
+                                                            </i>
+                                                        </div>
+                                                        <!--end::Timeline icon-->
+                                                        <!--begin::Timeline content-->
+                                                        <div class="timeline-content mb-5 mt-n1">
+                                                            <!--begin::Timeline heading-->
+                                                            <div class="pe-3 mb-5">
+                                                                <!--begin::Title-->
+                                                                <div class="fs-5 fw-semibold fw-bold mb-2">
+                                                                    {% if not pe.fecha_inicio %}Sin fecha de ejecución
+                                                                        {% elif not pe.fecha_fin %}{{ pe.fecha_inicio }}{% else %}{{ pe.fecha_inicio }}
+                                                                        al {{ pe.fecha_fin }} [
+                                                                        {{ pe.cantidad_dias_periodo }} días]{% endif %}
+                                                                </div>
+                                                                <!--end::Title-->
+                                                                <!--begin::Description-->
+
+                                                                <!--end::Description-->
+                                                            </div>
+                                                            <!--end::Timeline heading-->
+                                                            <!--begin::Timeline details-->
+                                                            <div class="overflow-auto pb-5">
+                                                                <!--begin::Record-->
+                                                                <div class="d-flex gap-10 align-items-center justify-content-between border border-dashed border-success rounded px-7 py-3 mb-5">
+                                                                    <!--begin::Title-->
+                                                                    <a href="#"
+                                                                       class="fs-5 text-gray-900 text-hover-success fw-semibold ">{{ pe.monto }} {{ pp.tipo_moneda.nombre }}</a>
+                                                                    <!--end::Title-->
+                                                                    <!--begin::Label-->
+                                                                    <div class=" pe-2">
+                                                                        <span class="fs-5 badge badge-success">{{ pe.get_porciento_ejecutado | floatformat:2 }}%</span>
+                                                                    </div>
+                                                                    <div class=" pe-2">
+                                                                    <span class="fs-5 text-gray-900 text-hover-success fw-semibold">{% if pe.observacion %}
+                                                                        {{ pe.observacion }}{% else %}
+                                                                        -{% endif %}</span>
+                                                                    </div>
+                                                                    <!--end::Label-->
+
+                                                                    <!--begin::Action-->
+                                                                    <a title="Editar presupuesto ejecutado"
+                                                                       data-bs-toggle="tooltip"
+                                                                       data-bs-placement="top"
+                                                                       href="{% url 'registro:editar_presupuesto_ejecutado' accion.id pp.id pe.id %}"
+                                                                       class="btn btn-sm btn-light btn-active-light-success align-self-end">
+                                                                        <i class="ki-duotone ki-arrow-right fs-2">
+                                                                            <div class="path1"></div>
+                                                                            <div class="path2"></div>
+                                                                        </i>
+                                                                    </a>
+                                                                    <!--end::Action-->
+                                                                </div>
+                                                                <!--end::Record-->
+                                                            </div>
+                                                            <!--end::Timeline details-->
+                                                        </div>
+                                                        <!--end::Timeline content-->
+                                                    </div>
+                                                    <!--end::Timeline item-->
+                                                    {% if forloop.last %}
+                                                    {% else %}
+                                                        <!--begin::Timeline item-->
+                                                        <div class="timeline-item">
+                                                            <!--begin::Timeline line-->
+                                                            <div class="timeline-line"></div>
+                                                            <!--end::Timeline line-->
+                                                        </div>
+                                                        <!--end::Timeline item-->
+                                                    {% endif %}
+                                                </div>
+                                                {% if forloop.last %}
+                                                    <div class="border mb-3">
+                                                        <div class=" fw-bold py-3 px-4">
+                                                            Total: [{{ pp.get_monto_total_ejecutado | floatformat:2 }}
+                                                            -> {{ pp.get_porcentaje_monto_ejecutado | floatformat:2 }}%]
+                                                        </div>
+
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+
+                                        </div>
+                                        <div class="separator separator-dashed"></div>
+
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="m-0">
+                                    <div class="d-flex align-items-center collapsible py-3 toggle mb-0 collapsed"
+                                         data-bs-toggle="collapse"
+                                         data-bs-target="#kt_job"
+                                         aria-expanded="false">
+
+                                        <div class="btn btn-sm btn-icon mw-20px btn-active-color-success me-5">
+                                            <i class="ki-duotone ki-minus-square toggle-on text-success fs-1">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                            <i class="ki-duotone ki-plus-square toggle-off fs-1">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                                <span class="path3"></span>
+                                            </i>
+                                        </div>
+                                        <h4 class="text-gray-700 fw-bold cursor-pointer mb-0">No hay presupuestos
+                                            planificados para esta acción.</h4>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-5">
+                            <div class="row">
+                                {% for desglose_t in desglose_presupuesto %}
+                                    <div class=" fw-bold py-3 px-4 mb-3">
+                                        {{ desglose_t.moneda }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border border-gray-300 border-dashed rounded py-3 px-4 mb-3">
+                                            <div class="fs-2 fw-bold">
+                                                ${{ desglose_t.monto_planificado_total | floatformat:2 }}
+                                            </div>
+                                            <div class="fw-semibold fs-6 ">Total Planificado</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border border-gray-300 border-dashed rounded py-3 px-4 mb-3">
+                                            <div class="fs-2 fw-bold">
+                                                ${{ desglose_t.monto_ejecutado_total | floatformat:2 }}
+                                            </div>
+                                            <div class="fw-semibold fs-6 text-gray-800">Total ejecutado</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border border-gray-300 border-dashed rounded py-3 px-4 mb-3">
+                                            <div class="fs-2 fw-bold">
+                                                ${{ desglose_t.restante_total | floatformat:2 }}
+                                            </div>
+
+                                            <div class="fw-semibold fs-6 text-gray-800">Restante Total</div>
+
+
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="border border-gray-300 border-dashed rounded py-3 px-4 mb-3">
+
+                                            <div class="d-flex align-items-center flex-column mt-3 w-100">
+                                                <div class="d-flex justify-content-between w-100 mt-auto mb-2">
+                                                    <span class="fw-semibold fs-6 text-gray-800">Porcentaje de ejecución</span>
+                                                    <span class="fw-bold fs-6"> {{ desglose_t.porcentaje_ejecucion_total | floatformat:2 }} %</span>
+                                                </div>
+                                                <div class="h-5px mx-3 w-100 bg-light mb-3">
+                                                    <div class="{% if desglose_t.porcentaje_ejecucion_total >= 80 %}bg-success{% elif desglose_t.porcentaje_ejecucion_total >= 40 %}bg-warning{% else %}bg-secondary{% endif %} rounded h-5px"
+                                                         role="progressbar"
+                                                         style="width:{{ desglose_t.porcentaje_ejecucion_total | floatformat:2 }}%; min-width: 2%;"
+                                                         aria-valuenow="{{ desglose_t.porcentaje_ejecucion_total | floatformat:2 }}"
+                                                         aria-valuemin="0"
+                                                         aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                    <div class="row justify-content-center">
+                                        <div id="kt_charts_widget_{{ desglose_t.moneda }}"
+                                             class="h-75 w-75 ps-4 pe-6"></div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-light"
+                            data-bs-dismiss="modal">
+                        Cerrar
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+
+    <script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script>
+        $(function () {
+            {#window.accion = {{ accion.nombre | safe}};#}
+
+            {% for gr in desglose_presupuesto %}
+
+                var chart_{{ gr.moneda }} = new ApexCharts(document.querySelector("#kt_charts_widget_{{ gr.moneda }}"), {{ gr.chart_donut_data|safe }});
+                chart_{{ gr.moneda }}.render();
+            {% endfor %}
+        })
+    </script>
+    <script src="{% static 'assets/js/datatable_presupuesto_planificado.js' %}"></script>
+
+{% endblock %}

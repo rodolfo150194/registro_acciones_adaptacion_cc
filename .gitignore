@@ -1,0 +1,24 @@
+### Django ###
+*.pyc
+*.db
+*.sqlite3
+*..sqlite3-journal
+media/*
+*static/admin*
+*.rej
+*.orig
+*.old
+*.swp
+*/migrations/*
+salvas/*
+*.idea/*
+*.sh
+*~
+*.log
+*.pot
+__pycache__/
+/mitigacion_cm/migrations/
+/adaptacion_cm/migrations/
+/nomencladores/migrations/
+/home/migrations/
+
