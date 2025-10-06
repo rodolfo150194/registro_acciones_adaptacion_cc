@@ -1,0 +1,659 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'assets/css/driver.css' %}"/>
+{% endblock %}
+{% block content %}
+    <!--begin::Categories-->
+    <div class="app-toolbar-wrapper w-100 mb-8">
+        <!--begin::Wrapper-->
+        <div class="d-flex flex-stack mb-2">
+            <!--begin::Title-->
+            <span class="fw-bold fs-5 text-gray-700">Sectores</span>
+            <!--end::Title-->
+            <!--begin::Action-->
+{#            <a href="#" class="btn btn-color-gray-500 fw-semibold" data-bs-toggle="modal"#}
+{#               data-bs-target="#kt_modal_create_campaign">View All</a>#}
+            <!--end::Action-->
+        </div>
+        <!--end::Wrapper-->
+        <!--begin::Navs-->
+        <!--TODO cuando toque un sectores se filtra toda la estadistica que hay debajo-->
+        <div class="nav d-flex justify-content-xxl-between flex-wrap gap-5" id="sectores">
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-primary btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2 active"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-chart-line-star fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Finances</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-primary btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-bus fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Education</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-calendar fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Events</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-artificial-intelligence fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">AI</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-ship fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Logistics</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-bitcoin fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Crypto</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-people fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Society</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-design fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Design</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-data fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Data</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-picture fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Art</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-tree fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Nature</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+            <!--begin::Nav item-->
+            <li class="nav-item mb-2">
+                <!--begin::Nav link-->
+                <a class="nav-link btn btn-active-success btn-center bg-gray-100 btn-color-gray-600 rounded-3 flex-column overflow-hidden w-90px h-85px pt-7 pt-lg-5 pb-2"
+                   data-bs-toggle="tab" href="#">
+                    <!--begin::Icon-->
+                    <div class="nav-icon mb-3">
+                        <i class="ki-outline ki-pulse fs-2x p-0"></i>
+                    </div>
+                    <!--end::Icon-->
+                    <!--begin::Title-->
+                    <span class="fw-semibold fs-7 lh-1">Medicine</span>
+                    <!--end::Title-->
+                </a>
+                <!--end::Nav link-->
+            </li>
+            <!--end::Nav item-->
+        </div>
+        <!--end::Items-->
+    </div>
+    <!--end::Categories-->
+
+    <!-- Encabezado con última actualización -->
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <h1 class="text-gray-900 fw-bold fs-2x">Dashboard Ejecutivo</h1>
+            <div class="text-muted fs-7">
+                <i class="ki-outline ki-calendar fs-5 me-1"></i>
+                Última actualización: {{ ultima_actualizacion|date:"d/m/Y H:i" }}
+            </div>
+        </div>
+
+        <!-- ========== FILA 1: MÉTRICAS PRINCIPALES ========== -->
+        <div class="row g-5 g-xl-8 mb-5">
+            <!-- Total Acciones -->
+            <div class="col-xl-3">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex align-items-center mb-5">
+                            <div class="symbol symbol-60px me-4">
+                                <span class="symbol-label bg-light-primary">
+                                    <i class="ki-outline ki-abstract-26 fs-2x text-primary"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <span class="text-gray-500 fw-bold fs-7 d-block">Total Acciones</span>
+                                <span class="text-gray-800 fw-bold fs-2x">{{ resumen_general.total_acciones }}</span>
+                            </div>
+                        </div>
+                        <div class="text-muted fs-7">
+                            <span class="fw-bold text-success">{{ resumen_general.acciones_activas }}</span> activas
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Indicadores -->
+            <div class="col-xl-3">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex align-items-center mb-5">
+                            <div class="symbol symbol-60px me-4">
+                                <span class="symbol-label bg-light-info">
+                                    <i class="ki-outline ki-chart-line fs-2x text-info"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <span class="text-gray-500 fw-bold fs-7 d-block">Total Indicadores</span>
+                                <span class="text-gray-800 fw-bold fs-2x">{{ resumen_general.total_indicadores }}</span>
+                            </div>
+                        </div>
+                        <div class="text-muted fs-7">
+                            <span class="fw-bold text-info">{{ resumen_general.indicadores_con_metas }}</span> con metas definidas
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertas Críticas -->
+            <div class="col-xl-3">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex align-items-center mb-5">
+                            <div class="symbol symbol-60px me-4">
+                                <span class="symbol-label bg-light-warning">
+                                    <i class="ki-outline ki-notification-bing fs-2x text-warning"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <span class="text-gray-500 fw-bold fs-7 d-block">Indicadores en Alerta</span>
+                                <span class="text-gray-800 fw-bold fs-2x">{{ indicadores_criticos|length }}</span>
+                            </div>
+                        </div>
+                        <div class="text-muted fs-7">
+                            Requieren atención inmediata
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metas Próximas -->
+            <div class="col-xl-3">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex align-items-center mb-5">
+                            <div class="symbol symbol-60px me-4">
+                                <span class="symbol-label bg-light-danger">
+                                    <i class="ki-outline ki-timer fs-2x text-danger"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <span class="text-gray-500 fw-bold fs-7 d-block">Metas por Vencer</span>
+                                <span class="text-gray-800 fw-bold fs-2x">{{ metas_proximas|length }}</span>
+                            </div>
+                        </div>
+                        <div class="text-muted fs-7">
+                            En los próximos 30 días
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== FILA 2: PRESUPUESTOS ========== -->
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-xl-12">
+                <div class="card card-flush">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">Resumen de Presupuestos</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">Estado de ejecución presupuestaria por moneda</span>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-5">
+                            {% for presupuesto in presupuestos_por_moneda %}
+                            <div class="col-md-6 col-xl-4">
+                                <div class="border border-gray-300 border-dashed rounded p-6 mb-6">
+                                    <div class="d-flex align-items-center mb-5">
+                                        <div class="symbol symbol-50px me-4">
+                                            <span class="symbol-label bg-light-{{ presupuesto.estado }}">
+                                                <i class="ki-outline ki-dollar fs-2x text-{{ presupuesto.estado }}"></i>
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <span class="text-gray-800 fw-bold fs-3">{{ presupuesto.simbolo }}</span>
+                                            <span class="text-gray-600 fw-semibold fs-6 ms-2">{{ presupuesto.moneda }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Planificado -->
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-gray-600 fw-semibold fs-7">Planificado:</span>
+                                        <span class="text-gray-800 fw-bold fs-6">{{ presupuesto.simbolo }} {{ presupuesto.total_planificado|floatformat:2 }}</span>
+                                    </div>
+
+                                    <!-- Ejecutado -->
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-gray-600 fw-semibold fs-7">Ejecutado:</span>
+                                        <span class="text-gray-800 fw-bold fs-6">{{ presupuesto.simbolo }} {{ presupuesto.total_ejecutado|floatformat:2 }}</span>
+                                    </div>
+
+                                    <!-- Restante -->
+                                    <div class="d-flex justify-content-between mb-4">
+                                        <span class="text-gray-600 fw-semibold fs-7">Restante:</span>
+                                        <span class="text-gray-800 fw-bold fs-6">{{ presupuesto.simbolo }} {{ presupuesto.restante|floatformat:2 }}</span>
+                                    </div>
+
+                                    <!-- Barra de progreso -->
+                                    <div class="progress h-8px mb-2">
+                                        <div class="progress-bar bg-{{ presupuesto.estado }}"
+                                             role="progressbar"
+                                             style="width: {{ presupuesto.porcentaje_ejecutado }}%"
+                                             aria-valuenow="{{ presupuesto.porcentaje_ejecutado }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="text-center">
+                                        <span class="badge badge-light-{{ presupuesto.estado }} fs-7">
+                                            {{ presupuesto.porcentaje_ejecutado|floatformat:1 }}% ejecutado
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="ki-outline ki-information-5 fs-2 me-2"></i>
+                                    No hay presupuestos registrados
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== FILA 3: ALERTAS E INDICADORES CRÍTICOS ========== -->
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-xl-8">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">
+                                <i class="ki-outline ki-notification-bing text-warning fs-2 me-2"></i>
+                                Indicadores que Requieren Atención
+                            </span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">Alertas automáticas basadas en desempeño</span>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                                <thead>
+                                    <tr class="fw-bold text-muted">
+                                        <th class="min-w-150px">Indicador</th>
+                                        <th class="min-w-140px">Acción</th>
+                                        <th class="min-w-200px">Alertas</th>
+                                        <th class="min-w-100px text-center">Riesgo</th>
+                                        <th class="min-w-100px text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in indicadores_criticos %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="d-flex justify-content-start flex-column">
+                                                    <span class="text-gray-800 fw-bold fs-7">{{ item.indicador.nombre }}</span>
+                                                    <span class="text-muted fw-semibold text-muted d-block fs-8">{{ item.indicador.tipo_indicador.nombre }}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="text-gray-600 fw-semibold fs-7">{{ item.accion.nombre|truncatewords:5 }}</span>
+                                        </td>
+                                        <td>
+                                            {% for alerta in item.alertas %}
+                                            <div class="badge badge-light-warning mb-1 fs-8">
+                                                <i class="ki-outline ki-information-5 fs-7 me-1"></i>{{ alerta }}
+                                            </div>
+                                            {% endfor %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if item.nivel_riesgo == 'alto' %}
+                                            <span class="badge badge-light-danger">Alto</span>
+                                            {% elif item.nivel_riesgo == 'medio' %}
+                                            <span class="badge badge-light-warning">Medio</span>
+                                            {% else %}
+                                            <span class="badge badge-light-success">Bajo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{{ item.url }}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm">
+                                                <i class="ki-outline ki-eye fs-4"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-10">
+                                            <div class="text-gray-600">
+                                                <i class="ki-outline ki-shield-tick fs-3x text-success mb-3"></i>
+                                                <p class="fw-semibold">¡Excelente! No hay alertas críticas</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 5 Acciones -->
+            <div class="col-xl-4">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">
+                                <i class="ki-outline ki-medal-star text-warning fs-2 me-2"></i>
+                                Mejores Acciones
+                            </span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">Top 5 por desempeño</span>
+                        </h3>
+                    </div>
+                    <div class="card-body pt-5">
+                        {% for item in top_acciones %}
+                        <div class="d-flex align-items-center mb-7">
+                            <div class="symbol symbol-50px me-3">
+                                <span class="symbol-label bg-light-success">
+                                    <span class="text-success fw-bold fs-4">{{ forloop.counter }}</span>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <a href="{% url 'registro:detalle_accion' item.accion.id %}" class="text-gray-800 text-hover-primary fw-bold fs-7">
+                                    {{ item.accion.nombre|truncatewords:6 }}
+                                </a>
+                                <span class="text-muted fw-semibold d-block fs-8">{{ item.sector }}</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge badge-light-success fs-8">{{ item.score|floatformat:0 }}%</span>
+                                <span class="text-muted fw-semibold d-block fs-9">{{ item.total_indicadores }} indicadores</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-10">
+                            <i class="ki-outline ki-chart-line fs-3x text-muted mb-3"></i>
+                            <p class="text-muted">No hay suficientes datos para ranking</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== FILA 4: ANÁLISIS POR SECTOR Y METAS PRÓXIMAS ========== -->
+        <div class="row g-5 g-xl-8 mb-5">
+            <!-- Análisis por Sector -->
+            <div class="col-xl-6">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">Análisis por Sector</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">Distribución de acciones e indicadores</span>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                                <thead>
+                                    <tr class="fw-bold text-muted">
+                                        <th>Sector</th>
+                                        <th class="text-center">Acciones</th>
+                                        <th class="text-center">Indicadores</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sector in sectores_data %}
+                                    <tr>
+                                        <td>
+                                            <span class="text-gray-800 fw-bold fs-7">{{ sector.sector }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge badge-light-primary">{{ sector.total_acciones }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge badge-light-info">{{ sector.total_indicadores }}</span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center py-5">
+                                            <span class="text-muted">No hay datos disponibles</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metas Próximas a Vencer -->
+            <div class="col-xl-6">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">
+                                <i class="ki-outline ki-calendar-tick text-danger fs-2 me-2"></i>
+                                Metas Próximas a Vencer
+                            </span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">Próximos 30 días</span>
+                        </h3>
+                    </div>
+                    <div class="card-body pt-5">
+                        {% for meta in metas_proximas %}
+                        <div class="d-flex align-items-center mb-7">
+                            <div class="symbol symbol-50px me-3">
+                                <span class="symbol-label bg-light-{% if meta.urgencia == 'alta' %}danger{% elif meta.urgencia == 'media' %}warning{% else %}info{% endif %}">
+                                    <i class="ki-outline ki-timer fs-2x text-{% if meta.urgencia == 'alta' %}danger{% elif meta.urgencia == 'media' %}warning{% else %}info{% endif %}"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <a href="{% url 'registro:lista_resultado_indicador' meta.accion.id meta.indicador.id %}" class="text-gray-800 text-hover-primary fw-bold fs-7">
+                                    {{ meta.indicador.nombre|truncatewords:8 }}
+                                </a>
+                                <span class="text-muted fw-semibold d-block fs-8">{{ meta.accion.nombre|truncatewords:5 }}</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-gray-800 fw-bold fs-6 d-block">{{ meta.dias_restantes }} días</span>
+                                <span class="badge badge-light-{% if meta.progreso < 50 %}danger{% elif meta.progreso < 80 %}warning{% else %}success{% endif %} fs-8">
+                                    {{ meta.progreso|floatformat:0 }}% progreso
+                                </span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-10">
+                            <i class="ki-outline ki-check-circle fs-3x text-success mb-3"></i>
+                            <p class="text-muted">No hay metas próximas a vencer</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== FILA 5: ESTADO DE ACCIONES ========== -->
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-12">
+                <div class="card card-flush">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">Estado de Acciones</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">Distribución por estado de ejecución</span>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-5">
+                            {% for estado in acciones_por_estado %}
+                            <div class="col-md-3">
+                                <div class="border border-gray-300 border-dashed rounded p-5 text-center">
+                                    <div class="fs-2hx fw-bold text-gray-800 mb-2">{{ estado.count }}</div>
+                                    <div class="fw-semibold text-gray-600 fs-7 mb-3">{{ estado.estado }}</div>
+                                    <div class="progress h-6px">
+                                        <div class="progress-bar bg-primary"
+                                             role="progressbar"
+                                             style="width: {{ estado.porcentaje }}%"
+                                             aria-valuenow="{{ estado.porcentaje }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="text-muted fs-8 mt-2">{{ estado.porcentaje|floatformat:1 }}%</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+{% endblock %}
+{% block js %}
+    <script src="{% static 'assets/js/widgets.bundle.js' %}"></script>
+    <script>
+    </script>
+{% endblock %}

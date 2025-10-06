@@ -9,12 +9,13 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, models, transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.forms import modelformset_factory, formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DetailView, DeleteView, FormView
@@ -35,7 +36,7 @@ from registro.utils import data_chart_donut, data_chart_line
 # Create your views here.
 
 class HomeView(LoginRequiredMixin, TemplateView):
-    template_name = 'home.html'
+    template_name = 'dashboard.html'
 
     def get(self, request, *args, **kwargs):
         # messages.success(request, 'Hola Bienvenidos al registro de acciones de adaptación')
@@ -43,13 +44,323 @@ class HomeView(LoginRequiredMixin, TemplateView):
             request.session['show_tour'] = True
         return super().get(request, *args, **kwargs)
 
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context['show_tour'] = self.request.session.get('show_tour', False)
+    #     context['title_html'] = 'Inicio'
+    #
+    #     if 'show_tour' in self.request.session:
+    #         del self.request.session['show_tour']
+    #
+    #     return context
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['show_tour'] = self.request.session.get('show_tour', False)
-        context['title_html'] = 'Inicio'
+        user = self.request.user
 
-        if 'show_tour' in self.request.session:
-            del self.request.session['show_tour']
+        # Filtrar acciones del usuario (o todas si es superuser)
+        if user.is_superuser:
+            acciones = Accion.objects.filter(publicado=True)
+        else:
+            acciones = Accion.objects.filter(user=user, publicado=True)
+
+        # ============ RESUMEN GENERAL ============
+        # Obtener todos los indicadores de las acciones
+        indicadores_ids = []
+        for accion in acciones:
+            indicadores_ids.extend(accion.indicadores.values_list('id', flat=True))
+
+        total_indicadores = len(set(indicadores_ids))  # Usar set para evitar duplicados
+        indicadores_con_metas = Indicador.objects.filter(
+            id__in=indicadores_ids,
+            meta_valor__isnull=False
+        ).count()
+
+        context['resumen_general'] = {
+            'total_acciones': acciones.count(),
+            'acciones_activas': acciones.filter(
+                estado_accion__nombre__icontains='ejecucion'
+            ).count(),
+            'total_indicadores': total_indicadores,
+            'indicadores_con_metas': indicadores_con_metas,
+        }
+
+        # ============ PRESUPUESTOS POR MONEDA ============
+        presupuestos_por_moneda = []
+        for moneda in TipoMoneda.objects.filter(estado=True):
+            # Planificado total - iterar sobre acciones
+            total_planificado = 0
+            total_ejecutado = 0
+
+            for accion in acciones:
+                # Sumar presupuestos planificados de esta acción con esta moneda
+                presupuestos_accion = accion.presupuestos_planificados.filter(
+                    tipo_moneda=moneda
+                )
+                for pp in presupuestos_accion:
+                    total_planificado += pp.monto
+
+                    # Sumar ejecutados de este presupuesto planificado
+                    ejecutado_pp = pp.presupuestos_ejecutados.aggregate(
+                        total=Sum('monto')
+                    )['total'] or 0
+                    total_ejecutado += ejecutado_pp
+
+            # Cálculos
+            restante = total_planificado - total_ejecutado
+            porcentaje_ejecutado = (
+                (total_ejecutado / total_planificado * 100)
+                if total_planificado > 0 else 0
+            )
+
+            # Estado del semáforo
+            if porcentaje_ejecutado < 50:
+                estado = 'danger'
+            elif porcentaje_ejecutado < 80:
+                estado = 'warning'
+            else:
+                estado = 'success'
+
+            presupuestos_por_moneda.append({
+                'moneda': moneda.nombre,
+                'total_planificado': round(total_planificado, 2),
+                'total_ejecutado': round(total_ejecutado, 2),
+                'restante': round(restante, 2),
+                'porcentaje_ejecutado': round(porcentaje_ejecutado, 2),
+                'estado': estado
+            })
+
+        context['presupuestos_por_moneda'] = presupuestos_por_moneda
+
+        # ============ INDICADORES CRÍTICOS (Alertas) ============
+        indicadores_criticos = []
+
+        for accion in acciones:
+            for indicador in accion.indicadores.all():
+                alertas = []
+                nivel_riesgo = 'bajo'
+
+            # Verificar si tiene resultados
+            resultados = indicador.resultados.all().order_by('-fecha')
+            if not resultados.exists():
+                alertas.append('Sin mediciones registradas')
+                nivel_riesgo = 'alto'
+            else:
+                # Verificar última medición
+                ultima_medicion = resultados.first()
+                dias_sin_medir = (
+                        timezone.now().date() - ultima_medicion.fecha
+                ).days
+
+                # Alerta por falta de mediciones recientes
+                if dias_sin_medir > 90:
+                    alertas.append(f'Sin mediciones hace {dias_sin_medir} días')
+                    nivel_riesgo = 'medio'
+
+                # Verificar progreso de meta
+                if indicador.meta_valor:
+                    progreso = indicador.calcular_progreso_meta()
+                    if progreso:
+                        porcentaje = progreso['progreso_porcentaje']
+
+                        # Calcular tiempo transcurrido vs progreso
+                        if indicador.meta_fecha_limite:
+                            dias_totales = (
+                                    indicador.meta_fecha_limite -
+                                    accion.fecha_inicio
+                            ).days
+                            dias_transcurridos = (
+                                    timezone.now().date() -
+                                    accion.fecha_inicio
+                            ).days
+                            porcentaje_tiempo = (
+                                dias_transcurridos / dias_totales * 100
+                                if dias_totales > 0 else 0
+                            )
+
+                            # Si el progreso está muy por debajo del tiempo
+                            if porcentaje < (porcentaje_tiempo - 20):
+                                alertas.append(
+                                    f'Progreso ({porcentaje:.1f}%) '
+                                    f'por debajo del tiempo esperado '
+                                    f'({porcentaje_tiempo:.1f}%)'
+                                )
+                                nivel_riesgo = 'alto'
+
+                # Verificar tendencia negativa
+                if resultados.count() >= 3:
+                    ultimos_3 = list(resultados[:3])
+                    if (ultimos_3[0].valor < ultimos_3[1].valor <
+                            ultimos_3[2].valor):
+                        if indicador.direccion_optima == 'aumentar':
+                            alertas.append('Tendencia descendente detectada')
+                            nivel_riesgo = 'medio'
+
+            # Solo agregar si hay alertas
+            if alertas:
+                indicadores_criticos.append({
+                    'indicador': indicador,
+                    'accion': accion,  # Ya tenemos la acción del loop
+                    'alertas': alertas,
+                    'nivel_riesgo': nivel_riesgo,
+                    'url': f'/accion/{accion.id}/indicadores/'
+                           f'{indicador.id}/resultado/comportamiento/'
+                })
+
+            # Ordenar por nivel de riesgo
+        orden_riesgo = {'alto': 0, 'medio': 1, 'bajo': 2}
+        indicadores_criticos.sort(
+            key=lambda x: orden_riesgo.get(x['nivel_riesgo'], 3)
+        )
+
+        context['indicadores_criticos'] = indicadores_criticos[:10]
+
+        # ============ ACCIONES POR ESTADO ============
+        acciones_por_estado = []
+        for estado in EstadoAccion.objects.all().order_by('orden'):
+            count = acciones.filter(estado_accion=estado).count()
+            acciones_por_estado.append({
+                'estado': estado.nombre,
+                'count': count,
+                'porcentaje': (
+                    count / acciones.count() * 100
+                    if acciones.count() > 0 else 0
+                )
+            })
+
+        context['acciones_por_estado'] = acciones_por_estado
+
+        # ============ TOP 5 ACCIONES CON MEJOR DESEMPEÑO ============
+        acciones_con_score = []
+
+        for accion in acciones:
+            indicadores = accion.indicadores.all()
+            if not indicadores.exists():
+                continue
+
+            score_total = 0
+            indicadores_evaluados = 0
+
+            for ind in indicadores:
+                resultados = ind.resultados.all()
+                if not resultados.exists():
+                    continue
+
+                indicadores_evaluados += 1
+
+                # Score basado en:
+                # 1. Progreso de meta (si existe)
+                score_meta = 0
+                if ind.meta_valor:
+                    progreso = ind.calcular_progreso_meta()
+                    if progreso:
+                        score_meta = min(
+                            progreso['progreso_porcentaje'], 100
+                        )
+
+                # 2. Consistencia de mediciones
+                score_mediciones = min(
+                    resultados.count() * 10, 100
+                )
+
+                # 3. Tendencia positiva
+                score_tendencia = 50
+                if resultados.count() >= 2:
+                    variacion = ind.variacion_valor
+                    if variacion and variacion.get('variacion_porcentual'):
+                        var_pct = variacion['variacion_porcentual']
+                        if ind.direccion_optima == 'aumentar':
+                            score_tendencia = 50 + min(var_pct, 50)
+                        else:
+                            score_tendencia = 50 + min(-var_pct, 50)
+
+                # Score promedio del indicador
+                score_indicador = (
+                        score_meta * 0.5 +
+                        score_mediciones * 0.3 +
+                        score_tendencia * 0.2
+                )
+                score_total += score_indicador
+
+            if indicadores_evaluados > 0:
+                score_final = score_total / indicadores_evaluados
+                acciones_con_score.append({
+                    'accion': accion,
+                    'score': round(score_final, 2),
+                    'total_indicadores': indicadores.count(),
+                    'sector': accion.sector.nombre
+                })
+
+        # Ordenar por score y tomar top 5
+        acciones_con_score.sort(key=lambda x: x['score'], reverse=True)
+        context['top_acciones'] = acciones_con_score[:5]
+
+        # ============ ANÁLISIS POR SECTOR ============
+        sectores_data = []
+        for sector in Sector.objects.all():
+            acciones_sector = acciones.filter(sector=sector)
+
+            if not acciones_sector.exists():
+                continue
+
+            # ✅ CORRECTO: Contar indicadores iterando sobre acciones
+            total_indicadores = 0
+            for accion in acciones_sector:
+                total_indicadores += accion.indicadores.count()
+
+            # ✅ CORRECTO: Presupuesto iterando sobre acciones
+            presupuesto_sector = 0
+            for accion in acciones_sector:
+                for pp in accion.presupuestos_planificados.all():
+                    presupuesto_sector += pp.monto
+
+            sectores_data.append({
+                'sector': sector.nombre,
+                'total_acciones': acciones_sector.count(),
+                'total_indicadores': total_indicadores,
+                'presupuesto_total': presupuesto_sector
+            })
+
+        context['sectores_data'] = sectores_data
+
+        # ============ PRÓXIMOS VENCIMIENTOS ============
+        hoy = timezone.now().date()
+        proximos_30_dias = hoy + datetime.timedelta(days=30)
+
+        metas_proximas = []
+        for accion in acciones:
+            for indicador in accion.indicadores.filter(
+                    meta_fecha_limite__isnull=False,
+                    meta_fecha_limite__gte=hoy,
+                    meta_fecha_limite__lte=proximos_30_dias
+            ):
+                progreso = indicador.calcular_progreso_meta()
+                dias_restantes = (indicador.meta_fecha_limite - hoy).days
+
+                # Nivel de urgencia
+                if dias_restantes <= 7:
+                    urgencia = 'alta'
+                elif dias_restantes <= 15:
+                    urgencia = 'media'
+                else:
+                    urgencia = 'baja'
+
+                metas_proximas.append({
+                    'indicador': indicador,
+                    'accion': accion,
+                    'dias_restantes': dias_restantes,
+                    'progreso': progreso['progreso_porcentaje'] if progreso else 0,
+                    'urgencia': urgencia
+                })
+
+        context['metas_proximas'] = metas_proximas
+
+        # ============ METADATA ============
+        context.update({
+            'title_html': 'Dashboard Ejecutivo',
+            'title_head': 'Panel de Control Ejecutivo',
+            'ultima_actualizacion': timezone.now()
+        })
 
         return context
 
@@ -1638,7 +1949,7 @@ def mapa_cuba_leaflet(request):
         'estados': EstadoAccion.objects.all().order_by('orden'),
         'escenarios': Escenario.objects.all().order_by('nombre'),
     }
-    return render(request, 'action/mapa.html',data)
+    return render(request, 'action/mapa.html', data)
 
 
 @require_GET
@@ -1650,7 +1961,7 @@ def municipios_por_tipo_accion(request):
     fecha = request.GET.get('fecha')
     q = Q()
     # acciones = Accion.objects.filter(tipo_accion_id=tipo_id)
-    #filtra con q estado, tipo, sector, escenario y fecha la fecha viene en formato 09/09/2025 to 18/09/2025
+    # filtra con q estado, tipo, sector, escenario y fecha la fecha viene en formato 09/09/2025 to 18/09/2025
     if tipo_id:
         q &= Q(tipo_accion_id=tipo_id)
     if estado_id:
@@ -1717,9 +2028,9 @@ def municipios_por_tipo_accion(request):
 
     # Convertir los dicts de presupuesto_total a listas de objetos {moneda, monto_total}
     for m in municipios.values():
-        m['presupuesto_total'] = [ {'moneda': k, 'monto_total': v} for k, v in m['presupuesto_total'].items() if v > 0 ]
+        m['presupuesto_total'] = [{'moneda': k, 'monto_total': v} for k, v in m['presupuesto_total'].items() if v > 0]
     for p in provincias.values():
-        p['presupuesto_total'] = [ {'moneda': k, 'monto_total': v} for k, v in p['presupuesto_total'].items() if v > 0 ]
+        p['presupuesto_total'] = [{'moneda': k, 'monto_total': v} for k, v in p['presupuesto_total'].items() if v > 0]
 
     # Calcular resumen ejecutivo
     total_acciones = acciones.count()
@@ -1732,7 +2043,7 @@ def municipios_por_tipo_accion(request):
             if moneda not in resumen_presupuesto:
                 resumen_presupuesto[moneda] = 0
             resumen_presupuesto[moneda] += monto
-    resumen_presupuesto_list = [ {'moneda': k, 'monto_total': v} for k, v in resumen_presupuesto.items() if v > 0 ]
+    resumen_presupuesto_list = [{'moneda': k, 'monto_total': v} for k, v in resumen_presupuesto.items() if v > 0]
 
     if municipios:
         print(resumen_presupuesto_list)
@@ -1757,4 +2068,5 @@ def municipios_por_tipo_accion(request):
             }
         }, safe=False)
     else:
-        return JsonResponse({'tipo': 'vacio', 'data': [], 'resumen': {'total_acciones': 0, 'total_activas': 0, 'presupuesto_total': []}}, safe=False)
+        return JsonResponse({'tipo': 'vacio', 'data': [],
+                             'resumen': {'total_acciones': 0, 'total_activas': 0, 'presupuesto_total': []}}, safe=False)
