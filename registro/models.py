@@ -49,6 +49,7 @@ class ResultadoIndicador(models.Model):
     valor = models.FloatField(null=True, blank=True)
     observacion = models.CharField(max_length=500, verbose_name="Observaciones o comentarios", null=True, blank=True)
     fecha = models.DateField(unique=True)
+    # fecha = models.DateField(auto_now=True)
 
 
 
@@ -360,8 +361,8 @@ class Accion(models.Model):
     alcance = models.ForeignKey(Alcance, verbose_name='Alcance', on_delete=models.CASCADE, null=True, blank=True)
     escala = models.ForeignKey(Escala, verbose_name='Escala o niveles', on_delete=models.CASCADE, null=True, blank=True)
     lugar_intervencion = models.CharField(verbose_name='Lugar de intervención', max_length=500, null=True, blank=True)
-    provincias = models.ManyToManyField(Provincia, verbose_name='Provincia', blank=True, null=True)
-    municipios = models.ManyToManyField(Municipio, verbose_name='Municipios', blank=True, null=True)
+    provincias = models.ManyToManyField(Provincia, verbose_name='Provincia')
+    municipios = models.ManyToManyField(Municipio, verbose_name='Municipios')
     meta = models.CharField(verbose_name='Meta climática', max_length=500, null=True, blank=True)
     publicado = models.BooleanField(default=False, verbose_name="Publicado", null=True, blank=True)
 

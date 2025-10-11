@@ -128,6 +128,8 @@ class Alcance(NomencladorAbstract):
 class TipoMoneda(NomencladorAbstract):
     history = AuditlogHistoryField()
     info_tooltip = models.CharField(max_length=500, verbose_name="Tooltip", null=True, blank=True)
+    sigla = models.CharField(max_length=500, verbose_name="Sigla", null=True, blank=True)
+    simbolo = models.CharField(max_length=500, verbose_name="Simbolo", null=True, blank=True)
     orden = models.IntegerField(default=0, null=True, blank=True)
     estado = models.BooleanField(default=True, verbose_name='¿Está activo?',null=True, blank=True)
 
