@@ -667,7 +667,7 @@ class InsightGeneratorService:
         # Verificar si las mediciones están al día
         proxima_medicion = indicador.calcular_proxima_medicion()
         if proxima_medicion:
-            dias_desde_ultima = (timezone.now().date() - object_list.last().fecha).days
+            dias_desde_ultima = (timezone.now() - object_list.last().fecha).days
 
             if dias_desde_ultima > 30:  # Más de un mes sin medir
                 insights.append({

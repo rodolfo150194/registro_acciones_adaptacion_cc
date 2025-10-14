@@ -16,9 +16,11 @@
                 <div class="card card-flush py-4">
                     <div class="card-header justify-content-between align-content-center">
                         <div class="card-title ">
-                            <h2>Medir variable del indicador {{ indicador.nombre }}</h2>
+                            <h2>Medir variable del indicador [{{ indicador.id }}]</h2>
                         </div>
 
+                        <h4>Fecha resultado anterior: [{{ indicador.ultima_medicion | date:"d-m-Y" }}]</h4>
+                        <h4>Frecuencia: [{{ indicador.frecuencia_medicion }}]</h4>
                         <h4>Resultado anterior: [{{ indicador.get_ultimo_valor }}]</h4>
                     </div>
                     <div class="card-body pt-0">
@@ -96,7 +98,7 @@
 
 
             {% if resultado.fecha %}
-                defaultDate = "{{ resultado.fecha | date:'Y-m-d' }}";
+                defaultDate = "{{ resultado.fecha | date:'Y-m-d H:i' }}";
             {% endif %}
             const locale_flatpickr = {
                 firstDayOfWeek: 1,
@@ -111,9 +113,10 @@
             };
             const e = document.querySelector("#kt_fecha_flatpickr");
             n = $(e).flatpickr({
+                enableTime: true,
                 altInput: !0,
-                altFormat: "d/m/Y",
-                dateFormat: "Y-m-d",
+                altFormat: "d F Y H:i",
+                dateFormat: "Y-m-d H:i",
                 defaultDate: defaultDate,
                 //onChange: function (e) {
                 //   a(e, t, n)

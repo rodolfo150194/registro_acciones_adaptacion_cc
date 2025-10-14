@@ -5,6 +5,7 @@ from dateutil.relativedelta import relativedelta
 from django.contrib.auth.models import User
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.db.models import F, Avg
+from django.utils import timezone
 from django.utils.timezone import now
 
 from .utils import data_chart_line
@@ -17,6 +18,7 @@ def get_upload_path(instance, filename):
     upload_path = f'documentos_subidos/{related_model_name}/{now().year}/{now().month}/{now().day}/{filename}'
 
     return upload_path
+
 
 
 class Documento(models.Model):
@@ -48,7 +50,7 @@ class ResultadoIndicador(models.Model):
                                                 through="ResultadoVariable")
     valor = models.FloatField(null=True, blank=True)
     observacion = models.CharField(max_length=500, verbose_name="Observaciones o comentarios", null=True, blank=True)
-    fecha = models.DateField(unique=True)
+    fecha = models.DateTimeField(unique=True)
     # fecha = models.DateField(auto_now=True)
 
 
@@ -192,19 +194,20 @@ class Indicador(models.Model):
         # Calcular basándose en la última medición real
         ultima_fecha = ultimo_resultado.fecha
 
-        if 'mensual' in self.frecuencia_medicion.nombre.lower():
-            return ultima_fecha + relativedelta(months=1)
-        elif 'trimestral' in self.frecuencia_medicion.unidad.lower():
-            return ultima_fecha + relativedelta(months=3)
-        elif 'semestral' in self.frecuencia_medicion.nombre.lower():
-            return ultima_fecha + relativedelta(months=6)
-        elif 'anual' in self.frecuencia_medicion.nombre.lower():
-            return ultima_fecha + relativedelta(years=1)
-        elif 'semanal' in self.frecuencia_medicion.nombre.lower():
-            return ultima_fecha + relativedelta(weeks=1)
+        if 'meses' in self.frecuencia_medicion.unidad.lower():
+            return ultima_fecha + relativedelta(months=self.frecuencia_medicion.cantidad)
+        elif 'años' in self.frecuencia_medicion.unidad.lower():
+            return ultima_fecha + relativedelta(years=self.frecuencia_medicion.cantidad)
+        elif 'semanas' in self.frecuencia_medicion.unidad.lower():
+            return ultima_fecha + relativedelta(weeks=self.frecuencia_medicion.cantidad)
+        elif 'días' in self.frecuencia_medicion.unidad.lower():
+            return ultima_fecha + relativedelta(days=self.frecuencia_medicion.cantidad)
+        elif 'minutos' in self.frecuencia_medicion.unidad.lower():
+            return ultima_fecha + relativedelta(minutes=self.frecuencia_medicion.cantidad)
+        elif 'horas' in self.frecuencia_medicion.unidad.lower():
+            return ultima_fecha + relativedelta(hours=self.frecuencia_medicion.cantidad)
         else:
-            # Por defecto, usar días si no se reconoce la frecuencia
-            return ultima_fecha + relativedelta(days=30)
+            raise ValueError(f"Unidad de frecuencia no reconocida: {self.frecuencia_medicion.unidad}")
 
     def interpretar_cambio(self, valor_anterior, valor_actual):
         """Interpreta si un cambio es positivo o negativo según la dirección óptima"""
@@ -269,6 +272,11 @@ class Indicador(models.Model):
         acciones = self.accion_set.all()
         usuarios = User.objects.filter(accion__in=acciones).distinct()
         return usuarios
+
+    def get_accion(self):
+        return Accion.objects.filter(indicadores=self).first()
+
+
 
 
 class ResultadoAccion(models.Model):

@@ -483,7 +483,7 @@ def get_acciones_data():
 
 
 def crear_acciones(usuario):
-    """Crea 20 acciones con presupuestos"""
+    """Crea 20 acciones con presupuestos, provincias y municipios"""
     print("\n[5/12] Creando acciones...")
     Accion.objects.all().delete()
 
@@ -497,6 +497,14 @@ def crear_acciones(usuario):
     programas_apoyo = list(ProgramaApoyo.objects.all())
     programas_productivos = list(ProgramaProductivo.objects.all())
     cobeneficios = list(Cobeneficio.objects.all())
+
+    # Obtener provincias y municipios existentes
+    provincias = list(Provincia.objects.all())
+
+    if not provincias:
+        print("⚠ No hay provincias en la BD. Las acciones se crearán sin provincias asignadas.")
+    else:
+        print(f"✓ Encontradas {len(provincias)} provincias en la BD")
 
     acciones_data = get_acciones_data()
     acciones_creadas = []
@@ -526,6 +534,19 @@ def crear_acciones(usuario):
             programa_productivo=random.choice(programas_productivos) if i % 3 == 0 else None
         )
 
+        # Asignar provincias (1-3 provincias por acción)
+        if provincias:
+            num_provincias = random.randint(1, min(3, len(provincias)))
+            provincias_seleccionadas = random.sample(provincias, num_provincias)
+            accion.provincias.add(*provincias_seleccionadas)
+
+            # Asignar municipios de las provincias seleccionadas (2-5 municipios)
+            municipios_disponibles = Municipio.objects.filter(provincia__in=provincias_seleccionadas)
+            if municipios_disponibles.exists():
+                num_municipios = random.randint(2, min(5, municipios_disponibles.count()))
+                municipios_seleccionados = random.sample(list(municipios_disponibles), num_municipios)
+                accion.municipios.add(*municipios_seleccionados)
+
         # Cobeneficios
         num_cobeneficios = random.randint(2, 4)
         accion.cobeneficios.add(*random.sample(cobeneficios, num_cobeneficios))
@@ -540,7 +561,7 @@ def crear_acciones(usuario):
 
 
 def crear_indicadores(acciones_creadas):
-    """Crea 2-3 indicadores por acción"""
+    """Crea 2-3 indicadores por acción CON VARIABLES ASOCIADAS"""
     print("\n[6/12] Creando indicadores...")
     Indicador.objects.all().delete()
 
@@ -549,6 +570,22 @@ def crear_indicadores(acciones_creadas):
     enfoques_ipcc = list(EnfoqueIPCC.objects.all())
     frecuencias = list(FrecuenciaMedicion.objects.all())
     ods_list = list(ObjetivosDesarrolloSostenible.objects.all())
+
+    # Obtener todas las variables disponibles
+    todas_variables = list(VariableIndicador.objects.all())
+
+    # Mapeo de fórmulas a variables que necesitan
+    formula_variables_map = {
+        'consumo_energia': ['consumo_energia'],
+        'eficiencia': ['eficiencia'],
+        'emisiones_total': ['emisiones_total'],
+        'area_reforestacion*500': ['area_reforestacion'],
+        'area_reforestacion': ['area_reforestacion'],
+        'cantidad_prod': ['cantidad_prod'],
+        'poblacion_beneficiada': ['poblacion_beneficiada'],
+        'inversion_ejecutada': ['inversion_ejecutada'],
+        'reduccion': ['reduccion'],
+    }
 
     templates = {
         'energia': [
@@ -624,6 +661,23 @@ def crear_indicadores(acciones_creadas):
                 valor_baseline=valor_baseline
             )
 
+            # *** AGREGAR VARIABLES AL INDICADOR ***
+            # Obtener las variables necesarias para esta fórmula
+            variables_necesarias = formula_variables_map.get(formula, [])
+
+            for var_code in variables_necesarias:
+                try:
+                    variable = VariableIndicador.objects.get(variable=var_code)
+                    indicador.variable_indicador.add(variable)
+                except VariableIndicador.DoesNotExist:
+                    print(f"⚠ Variable '{var_code}' no encontrada para indicador {indicador.nombre}")
+
+            # Si no se encontraron variables específicas, agregar 1-2 aleatorias
+            if not indicador.variable_indicador.exists() and todas_variables:
+                num_vars = random.randint(1, 2)
+                vars_aleatorias = random.sample(todas_variables, min(num_vars, len(todas_variables)))
+                indicador.variable_indicador.add(*vars_aleatorias)
+
             indicador.objetivos_relacionados.add(*random.sample(ods_list, random.randint(1, 3)))
             accion.indicadores.add(indicador)
 
@@ -634,7 +688,7 @@ def crear_indicadores(acciones_creadas):
                 'baseline': valor_baseline
             })
 
-    print(f"✓ Creados {len(indicadores_creados)} indicadores")
+    print(f"✓ Creados {len(indicadores_creados)} indicadores con variables asociadas")
     return indicadores_creados
 
 
@@ -644,7 +698,6 @@ def crear_resultados(indicadores_creados):
     ResultadoIndicador.objects.all().delete()
     ResultadoVariable.objects.all().delete()
 
-    variables = list(VariableIndicador.objects.all())
     resultados_creados = 0
 
     for ind_data in indicadores_creados:
@@ -652,6 +705,9 @@ def crear_resultados(indicadores_creados):
         accion = ind_data['accion']
         tiene_meta = ind_data['tiene_meta']
         baseline = ind_data['baseline']
+
+        # Obtener las variables del indicador
+        variables_indicador = list(indicador.variable_indicador.all())
 
         # Determinar tipo de evolución
         if accion.estado_accion.orden == 3:
@@ -778,13 +834,19 @@ def crear_resultados(indicadores_creados):
                 fecha=fecha_hora
             )
 
-            # Variables
-            for j, var in enumerate(random.sample(variables, min(2, len(variables)))):
-                ResultadoVariable.objects.create(
-                    resultado=resultado,
-                    variable_indicador=var,
-                    valor=round(valor / (j + 1), 2)
-                )
+            # *** CREAR RESULTADOS DE VARIABLES ***
+            # Asignar valores a cada variable del indicador
+            if variables_indicador:
+                for var in variables_indicador:
+                    # Calcular un valor derivado del valor principal del resultado
+                    # con algo de variación aleatoria
+                    valor_variable = valor * random.uniform(0.8, 1.2) / len(variables_indicador)
+
+                    ResultadoVariable.objects.create(
+                        resultado=resultado,
+                        variable_indicador=var,
+                        valor=round(max(0, valor_variable), 2)
+                    )
 
             indicador.resultados.add(resultado)
             indicador.ultima_medicion = fecha_hora
@@ -792,7 +854,7 @@ def crear_resultados(indicadores_creados):
 
             resultados_creados += 1
 
-    print(f"✓ Creados {resultados_creados} resultados")
+    print(f"✓ Creados {resultados_creados} resultados con variables")
 
 
 def mostrar_estadisticas():
@@ -803,8 +865,19 @@ def mostrar_estadisticas():
     print(f"✓ Acciones:                      {Accion.objects.count()}")
     print(f"✓ Indicadores:                   {Indicador.objects.count()}")
     print(f"✓ Resultados:                    {ResultadoIndicador.objects.count()}")
+    print(f"✓ Resultados de Variables:       {ResultadoVariable.objects.count()}")
     print(f"✓ Presupuestos planificados:     {PresupuestoPlanificado.objects.count()}")
     print(f"✓ Presupuestos ejecutados:       {PresupuestoEjecutado.objects.count()}")
+
+    # Estadísticas de ubicación
+    acciones_con_provincias = Accion.objects.filter(provincias__isnull=False).distinct().count()
+    acciones_con_municipios = Accion.objects.filter(municipios__isnull=False).distinct().count()
+    print(f"✓ Acciones con provincias:       {acciones_con_provincias}")
+    print(f"✓ Acciones con municipios:       {acciones_con_municipios}")
+
+    # Estadísticas de variables
+    indicadores_con_variables = Indicador.objects.filter(variable_indicador__isnull=False).distinct().count()
+    print(f"✓ Indicadores con variables:     {indicadores_con_variables}")
 
     print("\n" + "-" * 70)
     print("ALERTAS POTENCIALES:")
@@ -823,7 +896,7 @@ def mostrar_estadisticas():
     for accion in Accion.objects.filter(publicado=True):
         for ind in accion.indicadores.all():
             ultima = ind.resultados.order_by('-fecha').first()
-            if ultima and ultima.fecha < fecha_limite:
+            if ultima and ultima.fecha.date() < fecha_limite:
                 sin_medicion_reciente += 1
 
     # Metas próximas

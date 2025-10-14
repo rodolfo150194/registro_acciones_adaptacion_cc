@@ -15,7 +15,7 @@ def data_chart_line(data_line, indicador):
                 'fontFamily': 'Inter, Helvetica, sans-serif',
             }
         },
-        'colors':['#1B84FF'],
+        'colors': ['#1B84FF'],
         'dataLabels': {
             'enabled': 'false',
             'style': {
@@ -36,53 +36,65 @@ def data_chart_line(data_line, indicador):
     }
     return chart_data_line
 
+
 def data_chart_donut():
     chart_donut_data = {
-            'series': [],
-            'labels': ['Restante', 'Ejecutado'],
-            'locales': [
-                {
-                    "name": "en",
-                    "options": {
-                        "months": ["January", "February", "March", "April", "May", "June", "July", "August",
-                                   "September",
-                                   "October", "November", "December"],
-                        "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
-                                        "Dec"],
-                        "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-                        "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-                        "toolbar": {
-                            "exportToSVG": "Download SVG",
-                            "exportToPNG": "Download PNG",
-                            "menu": "Menu",
-                            "selection": "Selection",
-                            "selectionZoom": "Selection Zoom",
-                            "zoomIn": "Zoom In",
-                            "zoomOut": "Zoom Out",
-                            "pan": "Panning",
-                            "reset": "Reset Zoom"
-                        }
+        'series': [],
+        'labels': ['Restante', 'Ejecutado'],
+        'locales': [
+            {
+                "name": "en",
+                "options": {
+                    "months": ["January", "February", "March", "April", "May", "June", "July", "August",
+                               "September",
+                               "October", "November", "December"],
+                    "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+                                    "Dec"],
+                    "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                    "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+                    "toolbar": {
+                        "exportToSVG": "Download SVG",
+                        "exportToPNG": "Download PNG",
+                        "menu": "Menu",
+                        "selection": "Selection",
+                        "selectionZoom": "Selection Zoom",
+                        "zoomIn": "Zoom In",
+                        "zoomOut": "Zoom Out",
+                        "pan": "Panning",
+                        "reset": "Reset Zoom"
                     }
                 }
-            ],
-            'chart': {
-                'type': 'donut',
-            },
-            'plotOptions': {
-                'pie': {
-                    'donut': {
-                        'labels': {
+            }
+        ],
+        'chart': {
+            'type': 'donut',
+        },
+        'plotOptions': {
+            'pie': {
+                'donut': {
+                    'labels': {
+                        'show': 'true',
+                        'total': {
+                            'showAlways': 'true',
                             'show': 'true',
-                            'total': {
-                                'showAlways': 'true',
-                                'show': 'true'
-                            }
+                            'fontSize': '16px',
+                            'fontWeight': 'bold'
                         }
                     }
                 }
-            },
-
+            }
+        },
+        'legend': {
+            'position': 'bottom',
+            'fontSize': '12px'
+        },
+        'tooltip': {
+            'y': {
+                'formatter': "function(val) { return val + '%' }"
+            }
         }
+
+    }
     return chart_donut_data
 
 
@@ -251,7 +263,6 @@ def data_chart_enhanced(data_line, indicador, projection=None, meta=None):
     )
 
     return config
-
 
 # def data_chart_donut(series_data=None, labels=None):
 #     """Función mejorada para gráficos de dona"""

@@ -6,8 +6,9 @@ from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import UpdateView
 
+from notificaciones.models import Notificacion
 from seguridad.forms import PerfilForm
-from seguridad.models import Notificacion, Perfil
+from seguridad.models import Perfil
 
 
 class PerfilAdaptacionView(LoginRequiredMixin, UpdateView):

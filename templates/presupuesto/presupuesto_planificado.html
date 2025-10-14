@@ -1,5 +1,5 @@
 {% extends 'layout/base.html' %}
-{% load static i18n %}
+{% load static i18n format_numero %}
 {% block css %}
     <link href="{% static 'assets/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"
           type="text/css"/>
@@ -301,7 +301,7 @@
                                                     <span class="path3"></span>
                                                 </i>
                                             </div>
-                                            <h4 class="text-gray-700 fw-bold cursor-pointer mb-0">
+                                            <h4 class="fw-bold cursor-pointer mb-0">
                                                 {{ pp }}</h4>
 
                                         </div>
@@ -330,7 +330,7 @@
                                                             <!--begin::Timeline heading-->
                                                             <div class="pe-3 mb-5">
                                                                 <!--begin::Title-->
-                                                                <div class="fs-5 fw-semibold fw-bold mb-2">
+                                                                <div class="fs-6 fw-semibold text-gray-700 mb-2">
                                                                     {% if not pe.fecha_inicio %}Sin fecha de ejecución
                                                                         {% elif not pe.fecha_fin %}{{ pe.fecha_inicio }}{% else %}{{ pe.fecha_inicio }}
                                                                         al {{ pe.fecha_fin }} [
@@ -348,11 +348,11 @@
                                                                 <div class="d-flex gap-10 align-items-center justify-content-between border border-dashed border-success rounded px-7 py-3 mb-5">
                                                                     <!--begin::Title-->
                                                                     <a href="#"
-                                                                       class="fs-5 text-gray-900 text-hover-success fw-semibold ">{{ pe.monto }} {{ pp.tipo_moneda.nombre }}</a>
+                                                                       class="fs-5 text-gray-900 text-hover-success fw-semibold ">{{ pe.monto | formato_numero }}</a>
                                                                     <!--end::Title-->
                                                                     <!--begin::Label-->
                                                                     <div class=" pe-2">
-                                                                        <span class="fs-5 badge badge-success">{{ pe.get_porciento_ejecutado | floatformat:2 }}%</span>
+                                                                        <span class="fs-5 badge badge-success">{{ pe.get_porciento_ejecutado | formato_numero }}%</span>
                                                                     </div>
                                                                     <div class=" pe-2">
                                                                     <span class="fs-5 text-gray-900 text-hover-success fw-semibold">{% if pe.observacion %}
@@ -395,7 +395,7 @@
                                                 {% if forloop.last %}
                                                     <div class="border mb-3">
                                                         <div class=" fw-bold py-3 px-4">
-                                                            Total: [{{ pp.get_monto_total_ejecutado | floatformat:2 }}
+                                                            Total: [{{ pp.get_monto_total_ejecutado | formato_numero }}
                                                             -> {{ pp.get_porcentaje_monto_ejecutado | floatformat:2 }}%]
                                                         </div>
 
@@ -441,7 +441,7 @@
                                     <div class="col-md-4">
                                         <div class="border border-gray-300 border-dashed rounded py-3 px-4 mb-3">
                                             <div class="fs-2 fw-bold">
-                                                ${{ desglose_t.monto_planificado_total | floatformat:2 }}
+                                                {{ desglose_t.monto_planificado_total | formato_numero }}
                                             </div>
                                             <div class="fw-semibold fs-6 ">Total Planificado</div>
                                         </div>
@@ -449,7 +449,7 @@
                                     <div class="col-md-4">
                                         <div class="border border-gray-300 border-dashed rounded py-3 px-4 mb-3">
                                             <div class="fs-2 fw-bold">
-                                                ${{ desglose_t.monto_ejecutado_total | floatformat:2 }}
+                                                {{ desglose_t.monto_ejecutado_total | formato_numero }}
                                             </div>
                                             <div class="fw-semibold fs-6 text-gray-800">Total ejecutado</div>
                                         </div>
@@ -457,7 +457,7 @@
                                     <div class="col-md-4">
                                         <div class="border border-gray-300 border-dashed rounded py-3 px-4 mb-3">
                                             <div class="fs-2 fw-bold">
-                                                ${{ desglose_t.restante_total | floatformat:2 }}
+                                                {{ desglose_t.restante_total | formato_numero }}
                                             </div>
 
                                             <div class="fw-semibold fs-6 text-gray-800">Restante Total</div>

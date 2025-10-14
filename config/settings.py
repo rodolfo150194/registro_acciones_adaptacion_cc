@@ -33,7 +33,8 @@ ALLOWED_HOSTS = ['*']
 PROJECT_APPS = [
     'nomencladores',
     'registro',
-    'seguridad'
+    'seguridad',
+    'notificaciones'
 ]
 
 THIRD_PARTY_APPS = [

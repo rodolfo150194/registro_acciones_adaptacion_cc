@@ -23,7 +23,7 @@ from sympy import sympify, Symbol
 
 from nomencladores.models import EstadoAccion, TipoAccion, TipoMoneda, TipoPresupuesto, EstadoPresupuesto, \
     TipoIndicador, Escenario, Sector
-from registro.Services import FormulaCalculatorService, ResultadoIndicadorService, VariationCalculatorService, \
+from registro.services import FormulaCalculatorService, ResultadoIndicadorService, VariationCalculatorService, \
     ChartDataService, BreadcrumbBuilder, StatisticsCalculatorService, \
     InsightGeneratorService, RankingCalculatorService, MetaProgressService
 from registro.forms import DocumentoForm, AccionForm, PresupuestoPlanificadoForm, PresupuestoEjecutadoForm, \
@@ -149,7 +149,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
                 # Verificar última medición
                 ultima_medicion = resultados.first()
                 dias_sin_medir = (
-                        timezone.now().date() - ultima_medicion.fecha
+                        timezone.now() - ultima_medicion.fecha
                 ).days
 
                 # Alerta por falta de mediciones recientes
@@ -581,66 +581,68 @@ class PresupuestoPlanificadoListView(LoginRequiredMixin, PermissionRequiredMixin
         for tm in tipos_monedas:
             presupuestos = self.accion.presupuestos_planificados.filter(
                 tipo_moneda=tm).order_by('tipo_presupuesto__orden')
-            total = presupuestos.aggregate(total=models.Sum('monto'))['total']
-            monto_ejecutado_total = 0
-            desglose_planificado = []
-            subtotales = []
 
-            chart_donut_data = data_chart_donut()
+            if presupuestos:
+                total = presupuestos.aggregate(total=models.Sum('monto'))['total']
+                monto_ejecutado_total = 0
+                desglose_planificado = []
+                subtotales = []
 
-            for pp in presupuestos:
-                subtotales.append(pp.monto)
-                monto_planificado = pp.monto
-                presupuestos_ejecutados = pp.presupuestos_ejecutados.all()
-                monto_ejecutado = sum(p.monto for p in presupuestos_ejecutados)
+                chart_donut_data = data_chart_donut()
 
-                if monto_planificado > 0:
-                    porcentaje_ejecucion = (monto_ejecutado / monto_planificado) * 100
-                    restante = monto_planificado - monto_ejecutado
-                    porcentaje_restante = (restante / monto_planificado) * 100
+                for pp in presupuestos:
+                    subtotales.append(pp.monto)
+                    monto_planificado = pp.monto
+                    presupuestos_ejecutados = pp.presupuestos_ejecutados.all()
+                    monto_ejecutado = sum(p.monto for p in presupuestos_ejecutados)
+
+                    if monto_planificado > 0:
+                        porcentaje_ejecucion = (monto_ejecutado / monto_planificado) * 100
+                        restante = monto_planificado - monto_ejecutado
+                        porcentaje_restante = (restante / monto_planificado) * 100
+                    else:
+                        porcentaje_ejecucion = 0
+                        restante = 0
+                        porcentaje_restante = 0
+
+                    desglose_planificado.append({
+                        'moneda': tm.nombre,
+                        'planificado': monto_planificado,
+                        'ejecutado': monto_ejecutado,
+                        'porcentaje_ejecucion': porcentaje_ejecucion,
+                        'restante': restante,
+                        'porcentaje_restante': porcentaje_restante,
+                        'total': total
+                    })
+                    monto_ejecutado_total += monto_ejecutado
+
+                if monto_ejecutado_total > 0 and total:
+                    porcentaje_ejecucion_total = (monto_ejecutado_total / total) * 100
+                    restante_total = total - monto_ejecutado_total
+                    porcentaje_restante_total = (restante_total / total) * 100
                 else:
-                    porcentaje_ejecucion = 0
-                    restante = 0
-                    porcentaje_restante = 0
+                    porcentaje_ejecucion_total = 0
+                    restante_total = 0
+                    porcentaje_restante_total = 0
 
-                desglose_planificado.append({
-                    'moneda': tm.nombre,
-                    'planificado': monto_planificado,
-                    'ejecutado': monto_ejecutado,
-                    'porcentaje_ejecucion': porcentaje_ejecucion,
-                    'restante': restante,
-                    'porcentaje_restante': porcentaje_restante,
+                chart_donut_data['series'] = [total - monto_ejecutado_total, monto_ejecutado_total] if total else [0, 0]
+
+                desglose_total.append({
+                    'moneda': tm.sigla,
+                    'desglose_planificado': desglose_planificado,
+                    'porcentaje_ejecucion_total': porcentaje_ejecucion_total,
+                    'monto_ejecutado_total': monto_ejecutado_total,
+                    'monto_planificado_total': total,
+                    'restante_total': restante_total,
+                    'chart_donut_data': chart_donut_data,
+                    'porcentaje_restante_total': porcentaje_restante_total
+                })
+
+                totales_presupuestos.append({
+                    'moneda': tm.sigla,
+                    'subtotales': subtotales,
                     'total': total
                 })
-                monto_ejecutado_total += monto_ejecutado
-
-            if monto_ejecutado_total > 0 and total:
-                porcentaje_ejecucion_total = (monto_ejecutado_total / total) * 100
-                restante_total = total - monto_ejecutado_total
-                porcentaje_restante_total = (restante_total / total) * 100
-            else:
-                porcentaje_ejecucion_total = 0
-                restante_total = 0
-                porcentaje_restante_total = 0
-
-            chart_donut_data['series'] = [total - monto_ejecutado_total, monto_ejecutado_total] if total else [0, 0]
-
-            desglose_total.append({
-                'moneda': tm.nombre,
-                'desglose_planificado': desglose_planificado,
-                'porcentaje_ejecucion_total': porcentaje_ejecucion_total,
-                'monto_ejecutado_total': monto_ejecutado_total,
-                'monto_planificado_total': total,
-                'restante_total': restante_total,
-                'chart_donut_data': chart_donut_data,
-                'porcentaje_restante_total': porcentaje_restante_total
-            })
-
-            totales_presupuestos.append({
-                'moneda': tm.nombre,
-                'subtotales': subtotales,
-                'total': total
-            })
 
         context.update({
             'title_html': 'Presupuesto acción',
@@ -1688,8 +1690,7 @@ class ResultadosIndicadorListView(LoginRequiredMixin, PermissionRequiredMixin,
         """Calcula cuándo debe ser la próxima medición"""
         proxima_fecha = self.indicador.calcular_proxima_medicion()
         if proxima_fecha:
-            from datetime import date
-            dias_restantes = (proxima_fecha - date.today()).days
+            dias_restantes = (proxima_fecha - datetime.datetime.today()).days
             return {
                 'fecha': proxima_fecha,
                 'dias_restantes': dias_restantes,
@@ -1916,8 +1917,7 @@ class ResultadoIndicadorUpdateView(LoginRequiredMixin, PermissionRequiredMixin,
         except Exception as e:
             messages.error(
                 self.request,
-                'Verifica que las variables que sean denominador en una división no tengan valor 0 '
-                'o que la operación no resulte en 0.'
+                'Error: [' + e + ']'
             )
             return self.form_invalid(form, formset_variables=formset_variables)
 

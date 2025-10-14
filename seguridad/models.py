@@ -10,41 +10,6 @@ from registro.models import Accion
 from seguridad.validators import validate_image_size
 
 
-class Notificacion(models.Model):
-    TIPOS = (
-        ('S', 'Seguridad'),
-        ('M', 'Mensaje'),
-        ('P', 'Proceso')
-    )
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notificacion')
-    message = models.CharField(max_length=255)
-    type = models.CharField(max_length=1, choices=TIPOS)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-    link = models.URLField(blank=True, null=True)
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name_plural = 'Notificaciones'
-
-    def __str__(self):
-        return self.mensaje
-
-    # calcula el tiempo exacto desde la creacion de la notificacion ya sea minutos horas dias
-    @property
-    def get_tiempo_desde_creacion(self):
-        tiempo = timezone.now() - self.created_at
-        if tiempo.days > 0:
-            return f'{tiempo.days} días'
-        elif tiempo.seconds // 3600 > 0:
-            return f'{tiempo.seconds // 3600} horas'
-        elif tiempo.seconds // 60 > 0:
-            return f'{tiempo.seconds // 60} minutos'
-        else:
-            return 'Hace unos segundos'
-
-
 class Perfil(models.Model):
     phone_regex = RegexValidator(
         regex=r'^\+?\d{7,15}$',

@@ -162,7 +162,7 @@
                                         <td class="text-center">{{ pe.get_porciento_ejecutado | floatformat:2 }}</td>
                                         <td class="text-center">{% if pe.observacion %}
                                             {{ pe.observacion }}{% else %}-{% endif %}</td>
-                                        {#                                                                <td>{{ presupuesto_planificado.monto }}</td>#}
+                                        {#<td>{{ presupuesto_planificado.monto }}</td>#}
                                         <td class="d-flex justify-content-center gap-5">
 
                                             <a href="{% url 'registro:editar_presupuesto_ejecutado' accion.id presupuesto_planificado.id pe.id %}"
@@ -205,7 +205,6 @@
                                                             </div>
                                                             <!--end::Close-->
                                                         </div>
-
                                                         <div class="modal-body">
                                                             <p class="text-center fs-4">
                                                                 Estas segura/o de eliminar
