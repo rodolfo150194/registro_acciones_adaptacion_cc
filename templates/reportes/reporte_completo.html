@@ -1,0 +1,183 @@
+<!-- ============================================================================ -->
+<!-- CREAR ESTOS ARCHIVOS EN: templates/reportes/ -->
+<!-- ============================================================================ -->
+
+<!-- ============================================ -->
+<!-- 1. templates/reportes/reporte_completo.html -->
+<!-- ============================================ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Completo - {{ indicador.nombre }}</title>
+</head>
+<body>
+    <!-- Portada -->
+    <div style="text-align: center; margin-top: 100px;">
+        <h1 style="font-size: 32pt; color: #1B84FF;">REPORTE COMPLETO</h1>
+        <h2 style="font-size: 20pt;">{{ indicador.nombre }}</h2>
+        <p style="font-size: 14pt; margin-top: 30px;">
+            <strong>Acción:</strong> {{ accion.nombre }}<br>
+            <strong>Tipo:</strong> {{ indicador.tipo_indicador.nombre }}<br>
+            <strong>Fecha:</strong> {{ fecha_generacion|date:"d/m/Y H:i" }}
+        </p>
+    </div>
+
+    <!-- Resumen Ejecutivo -->
+    <div style="page-break-before: always;">
+        <h2>1. RESUMEN EJECUTIVO</h2>
+
+        <div class="kpi-box">
+            <h3>Indicadores Clave de Desempeño (KPIs)</h3>
+            <table>
+                <tr>
+                    <th>Métrica</th>
+                    <th>Valor</th>
+                </tr>
+                <tr>
+                    <td>Valor Actual</td>
+                    <td><strong>{{ resultados.last.valor|floatformat:2 }} {{ indicador.unidad_medida.nombre }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Variación Total</td>
+                    <td><strong>{{ variaciones.variacion_porcentual|floatformat:1 }}%</strong></td>
+                </tr>
+                <tr>
+                    <td>Promedio Histórico</td>
+                    <td>{{ estadisticas.promedio|floatformat:2 }} {{ indicador.unidad_medida.nombre }}</td>
+                </tr>
+                <tr>
+                    <td>Total de Mediciones</td>
+                    <td>{{ total_mediciones }}</td>
+                </tr>
+                <tr>
+                    <td>Efectividad Climática</td>
+                    <td>{{ estadisticas.efectividad.nivel|title }}</td>
+                </tr>
+            </table>
+        </div>
+
+        {% if meta_progress %}
+        <div class="kpi-box" style="background: #d1fae5;">
+            <h3>Progreso hacia Meta</h3>
+            <p><strong>Meta:</strong> {{ indicador.meta_valor }} {{ indicador.unidad_medida.nombre }}</p>
+            <p><strong>Progreso:</strong> {{ meta_progress.progreso_porcentaje|floatformat:1 }}%</p>
+            <p><strong>Falta:</strong> {{ meta_progress.falta_para_meta|floatformat:2 }} {{ indicador.unidad_medida.nombre }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Análisis Estadístico -->
+    <div style="page-break-before: always;">
+        <h2>2. ANÁLISIS ESTADÍSTICO DETALLADO</h2>
+
+        <h3>2.1 Medidas de Tendencia Central y Dispersión</h3>
+        <table>
+            <tr>
+                <th>Estadística</th>
+                <th>Valor</th>
+            </tr>
+            <tr>
+                <td>Media</td>
+                <td>{{ estadisticas.promedio|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Mínimo</td>
+                <td>{{ estadisticas.minimo|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Máximo</td>
+                <td>{{ estadisticas.maximo|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Rango</td>
+                <td>{{ estadisticas.rango|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Desviación Estándar</td>
+                <td>{{ estadisticas.desviacion|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Coeficiente de Variación</td>
+                <td>{{ estadisticas.coef_variacion|floatformat:1 }}%</td>
+            </tr>
+            <tr>
+                <td>Consistencia</td>
+                <td>{{ estadisticas.consistencia_nivel }}</td>
+            </tr>
+        </table>
+
+        <h3>2.2 Gráfico de Tendencia</h3>
+        {% if graficos.tendencia %}
+        <img src="{{ graficos.tendencia }}" alt="Gráfico de Tendencia" style="width: 100%; margin: 20px 0;">
+        {% endif %}
+
+        <h3>2.3 Distribución de Valores</h3>
+        {% if graficos.distribucion %}
+        <img src="{{ graficos.distribucion }}" alt="Distribución" style="width: 100%; margin: 20px 0;">
+        {% endif %}
+    </div>
+
+    <!-- Datos Históricos -->
+    <div style="page-break-before: always;">
+        <h2>3. DATOS HISTÓRICOS</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Valor</th>
+                    <th>Observación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for resultado in resultados %}
+                <tr>
+                    <td>{{ resultado.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ resultado.valor|floatformat:2 }}</td>
+                    <td>{{ resultado.observacion|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Insights y Recomendaciones -->
+    <div style="page-break-before: always;">
+        <h2>4. INSIGHTS Y RECOMENDACIONES</h2>
+
+        {% for insight in insights %}
+        <div class="insight">
+            <h3>{{ insight.titulo }}</h3>
+            <p>{{ insight.descripcion }}</p>
+            {% if insight.accion_recomendada %}
+            <p><strong>Acción Recomendada:</strong> {{ insight.accion_recomendada }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Progreso hacia Meta -->
+    {% if graficos.progreso_meta %}
+    <div style="page-break-before: always;">
+        <h2>5. PROGRESO HACIA META</h2>
+        <img src="{{ graficos.progreso_meta }}" alt="Progreso Meta" style="width: 100%; margin: 20px 0;">
+    </div>
+    {% endif %}
+
+    <!-- Pie de página en todas las páginas -->
+    <div style="position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; font-size: 9pt; color: #888;">
+        <p>Reporte generado el {{ fecha_generacion|date:"d/m/Y H:i" }} | {{ accion.nombre }}</p>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

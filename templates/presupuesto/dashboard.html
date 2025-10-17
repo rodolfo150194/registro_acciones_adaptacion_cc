@@ -1,0 +1,1415 @@
+{% extends 'layout/base.html' %}
+{% load static i18n %}
+{% load format_numero %}
+
+{% block css_vendor %}
+    <link href="{% static 'assets/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"
+          type="text/css"/>
+    <style>
+        /* Gradient background for health score card */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #1B84FF 0%, #0066CC 100%);
+        }
+
+        /* Card hover effects */
+        .card-flush:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(27, 132, 255, 0.2);
+        }
+
+        /* Alert animations */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-animated {
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        /* Progress bar animations */
+        @keyframes progressBar {
+            from {
+                width: 0;
+            }
+        }
+
+        .progress-bar {
+            animation: progressBar 1s ease-out;
+        }
+
+        /* Gauge chart container */
+        #budget_health_gauge {
+            position: relative;
+        }
+
+        /* Custom badge styles */
+        .badge-custom {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 0.475rem;
+        }
+
+        /* Table responsive enhancements */
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+        }
+
+        /* Chart containers */
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+
+        /* Loading spinner for charts */
+        .chart-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Custom tooltip styles */
+        .custom-tooltip {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        /* Metric cards */
+        .metric-card {
+            border-left: 4px solid #1B84FF;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-left-width: 8px;
+            background-color: #f8f9fa;
+        }
+
+        /* Symbol labels */
+        .symbol-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Alert severity colors */
+        .alert-severity-critical {
+            border-left: 5px solid #F1416C;
+        }
+
+        .alert-severity-high {
+            border-left: 5px solid #FFC700;
+        }
+
+        .alert-severity-medium {
+            border-left: 5px solid #00A3FF;
+        }
+
+        .alert-severity-low {
+            border-left: 5px solid #50CD89;
+        }
+
+        /* Recommendation cards */
+        .recommendation-card {
+            border: 2px dashed #e4e6ef;
+            border-radius: 0.625rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .recommendation-card:hover {
+            border-color: #1B84FF;
+            background-color: #f8f9fa;
+        }
+
+        /* Export modal enhancements */
+        .modal-content {
+            border-radius: 0.625rem;
+        }
+
+        .form-check-custom {
+            padding-left: 2rem;
+        }
+
+        .form-check-custom .form-check-input {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        /* Benchmark progress bar */
+        .benchmark-progress {
+            height: 25px;
+            border-radius: 0.475rem;
+            overflow: visible;
+            position: relative;
+        }
+
+        .benchmark-marker {
+            position: absolute;
+            top: -5px;
+            width: 3px;
+            height: 35px;
+            background-color: #F1416C;
+        }
+
+        /* Cost-effectiveness table */
+        .cost-effectiveness-table td {
+            vertical-align: middle;
+        }
+
+        .cost-effectiveness-score {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* Waterfall chart styling */
+        .waterfall-positive {
+            fill: #50CD89;
+        }
+
+        .waterfall-negative {
+            fill: #F1416C;
+        }
+
+        .waterfall-total {
+            fill: #1B84FF;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .fs-2hx {
+                font-size: 2rem !important;
+            }
+
+            .symbol-50px {
+                width: 40px !important;
+                height: 40px !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .fs-2hx {
+                font-size: 1.5rem !important;
+            }
+
+            .card-body {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .btn,
+            .card-toolbar,
+            .breadcrumb {
+                display: none !important;
+            }
+
+            .card {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Dark mode support (if needed) */
+        @media (prefers-color-scheme: dark) {
+            .card {
+                background-color: #1e1e2d;
+                color: #ffffff;
+            }
+
+            .text-gray-900 {
+                color: #ffffff !important;
+            }
+
+            .bg-light-primary {
+                background-color: rgba(27, 132, 255, 0.1) !important;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block breadcumb %}
+    {% include 'layout/breadcumbs.html' %}
+{% endblock %}
+
+{% block content %}
+    <!--begin::Page Header-->
+    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between mb-10">
+        <div>
+            <h1 class="text-gray-900 fw-bold mb-2">
+                <i class="ki-duotone ki-financial-schedule fs-2x text-primary me-3">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                    <span class="path3"></span>
+                </i>
+                Análisis Presupuestario Avanzado
+            </h1>
+            <p class="text-gray-600 fs-6">Acción: <span class="fw-bold">{{ accion.nombre }}</span></p>
+        </div>
+        <div class="d-flex gap-3">
+            <button type="button" class="btn btn-light-primary" data-bs-toggle="modal" data-bs-target="#modal_exportar">
+                <i class="ki-duotone ki-exit-up fs-2">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                </i>
+                Exportar Reporte
+            </button>
+            <a href="{{ crear_url }}" class="btn btn-primary">
+                <i class="ki-duotone ki-plus fs-2">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                </i>
+                Nuevo Presupuesto
+            </a>
+        </div>
+    </div>
+
+
+    <!--begin::Executive Summary Dashboard-->
+    <div class="row g-5 g-xl-8 mb-8">
+        <!--Total Planificado-->
+        <div class="col-xl-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-primary">
+                                <i class="ki-duotone ki-finance-calculator fs-2x text-primary">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                    <span class="path3"></span>
+                                    <span class="path4"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="text-gray-500 fw-semibold d-block fs-7">Total Planificado</span>
+                            {% for item in resumen_ejecutivo.total_planificado %}
+                                <span class="text-gray-800 fw-bold d-block fs-2">
+                                    {{ item.monto_total|formato_numero:item.moneda_simbolo }}
+                                </span>
+                                <span class="badge badge-light-primary">{{ item.moneda }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--Total Ejecutado-->
+        <div class="col-xl-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-success">
+                                <i class="ki-duotone ki-check-circle fs-2x text-success">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="text-gray-500 fw-semibold d-block fs-7">Total Ejecutado</span>
+                            {% for item in resumen_ejecutivo.total_ejecutado %}
+                                <span class="text-gray-800 fw-bold d-block fs-2">
+                                    {{ item.monto_total|formato_numero:item.moneda_simbolo }}
+                                </span>
+                                <span class="badge badge-light-success">{{ item.porcentaje|floatformat:1 }}%</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--Saldo Disponible-->
+        <div class="col-xl-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-info">
+                                <i class="ki-duotone ki-wallet fs-2x text-info">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                    <span class="path3"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="text-gray-500 fw-semibold d-block fs-7">Saldo Disponible</span>
+                            {% for item in resumen_ejecutivo.saldo_disponible %}
+                                <span class="text-gray-800 fw-bold d-block fs-2">
+                                    {{ item.monto_total|formato_numero:item.moneda_simbolo }}
+                                </span>
+                                <span class="badge badge-light-info">Disponible</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--Velocidad de Ejecución-->
+        <div class="col-xl-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-warning">
+                                <i class="ki-duotone ki-chart-line-up fs-2x text-warning">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="text-gray-500 fw-semibold d-block fs-7">Velocidad Mensual</span>
+                            {% for item in resumen_ejecutivo.velocidad_mensual %}
+                                <span class="text-gray-800 fw-bold d-block fs-2">
+                                    {{ item.velocidad|formato_numero:item.moneda_simbolo }}
+                                </span>
+                                <span class="badge badge-light-warning">por mes</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--begin::Alerts Section-->
+    {% if alertas_presupuestarias %}
+        <div class="card mb-5 mb-xl-8">
+            <div class="card-header border-0">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="fw-bold mb-2 text-gray-900">
+                        <i class="ki-duotone ki-information-5 fs-2 text-danger me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                            <span class="path3"></span>
+                        </i>
+                        Alertas y Notificaciones
+                    </span>
+                    <span class="text-muted fw-semibold fs-7">{{ alertas_presupuestarias|length }} alerta{{ alertas_presupuestarias|length|pluralize }}</span>
+                </h3>
+            </div>
+            <div class="card-body pt-0">
+                {% for alerta in alertas_presupuestarias %}
+                    <div class="d-flex align-items-center mb-5">
+                        <div class="symbol symbol-40px me-4">
+                            <span class="symbol-label bg-light-{{ alerta.nivel_color }}">
+                                <i class="ki-duotone {{ alerta.icono }} fs-2 text-{{ alerta.nivel_color }}">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <a href="#" class="text-gray-800 text-hover-primary fw-bold fs-6">{{ alerta.titulo }}</a>
+                            <span class="text-muted fw-semibold d-block">{{ alerta.mensaje }}</span>
+                            {% if alerta.accion_recomendada %}
+                                <div class="mt-2">
+                                    <span class="badge badge-light-{{ alerta.nivel_color }}">
+                                        <i class="ki-duotone ki-abstract-26 fs-7">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                        {{ alerta.accion_recomendada }}
+                                    </span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span class="badge badge-{{ alerta.nivel_color }}">{{ alerta.nivel|upper }}</span>
+                    </div>
+                    {% if not forloop.last %}
+                        <div class="separator separator-dashed my-4"></div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!--begin::Budget Execution Timeline-->
+    <div class="row g-5 g-xl-8 mb-8">
+        <div class="col-xl-8">
+            <div class="card card-flush h-100">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="ki-duotone ki-chart-line fs-2 text-primary me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                        Curva de Ejecución Presupuestaria (Burn Rate)
+                    </h3>
+                    <div class="card-toolbar">
+                        <select class="form-select form-select-sm" id="burn_rate_moneda">
+                            {% for moneda in tipos_moneda %}
+                                <option value="{{ moneda.id }}">{{ moneda.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="burn_rate_chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card card-flush h-100">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="ki-duotone ki-time fs-2 text-warning me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                        Proyección de Finalización
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% if proyeccion_finalizacion %}
+                        <div class="text-center mb-5">
+                            <div class="fs-2x fw-bold text-gray-900 mb-2">
+                                {{ proyeccion_finalizacion.meses_estimados|floatformat:1 }}
+                            </div>
+                            <div class="fs-6 text-gray-500">meses estimados</div>
+                            <div class="separator separator-dashed my-5"></div>
+                            <div class="fs-5 fw-bold text-gray-800">
+                                {{ proyeccion_finalizacion.fecha_estimada|date:"d M Y" }}
+                            </div>
+                            <div class="fs-7 text-gray-500">Fecha estimada de finalización</div>
+                        </div>
+
+                        <div class="mb-5">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fs-7 text-gray-600">Velocidad Mensual</span>
+                                <span class="fs-7 fw-bold text-gray-800">
+                                    {{ proyeccion_finalizacion.velocidad_mensual|formato_numero:"$" }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fs-7 text-gray-600">Tendencia</span>
+                                <span class="badge badge-{% if proyeccion_finalizacion.tendencia == 'acelerada' %}success{% else %}primary{% endif %}">
+                                    {{ proyeccion_finalizacion.tendencia|title }}
+                                </span>
+                            </div>
+                        </div>
+
+                        {% if proyeccion_finalizacion.riesgo_retraso %}
+                            <div class="alert alert-warning d-flex align-items-center p-5">
+                                <i class="ki-duotone ki-shield-cross fs-2hx text-warning me-4">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                                <div class="d-flex flex-column">
+                                    <h5 class="mb-1">Riesgo de Retraso</h5>
+                                    <span class="fs-7">{{ proyeccion_finalizacion.mensaje_riesgo }}</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-10">
+                            <i class="ki-duotone ki-information fs-5x text-gray-400 mb-5">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                                <span class="path3"></span>
+                            </i>
+                            <div class="text-gray-600 fs-6">
+                                Datos insuficientes para proyección
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--begin::Budget Breakdown Charts-->
+    <div class="row g-5 g-xl-8 mb-8">
+        <!--Waterfall Chart-->
+        <div class="col-xl-6">
+            <div class="card card-flush h-100">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="ki-duotone ki-chart-simple-3 fs-2 text-info me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                            <span class="path3"></span>
+                        </i>
+                        Cascada Presupuestaria
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div id="waterfall_chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!--Budget by Category-->
+        <div class="col-xl-6">
+            <div class="card card-flush h-100">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="ki-duotone ki-category fs-2 text-success me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                            <span class="path3"></span>
+                            <span class="path4"></span>
+                        </i>
+                        Ejecución por Categoría
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div id="category_chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--begin::Budget Comparison & Benchmarking-->
+    {% if benchmarking %}
+        <div class="card mb-5 mb-xl-8">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ki-duotone ki-chart-simple fs-2 text-primary me-2">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                    </i>
+                    Comparación con Acciones del Sector
+                </h3>
+                <div class="card-toolbar">
+                    <span class="badge badge-light-primary">
+                        Posición {{ benchmarking.posicion }} de {{ benchmarking.total }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-5">
+                    <div class="col-md-3 text-center border-end">
+                        <div class="fs-2hx fw-bold text-gray-900">{{ benchmarking.posicion }}</div>
+                        <div class="fs-7 text-gray-500">Ranking</div>
+                    </div>
+                    <div class="col-md-3 text-center border-end">
+                        <div class="fs-2hx fw-bold text-gray-900">{{ benchmarking.percentil|floatformat:0 }}%</div>
+                        <div class="fs-7 text-gray-500">Percentil</div>
+                    </div>
+                    <div class="col-md-3 text-center border-end">
+                        <div class="fs-2hx fw-bold text-gray-900">{{ benchmarking.eficiencia|floatformat:1 }}</div>
+                        <div class="fs-7 text-gray-500">Eficiencia</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="fs-2hx fw-bold text-gray-900">{{ benchmarking.eficiencia_promedio_sector|floatformat:1 }}</div>
+                        <div class="fs-7 text-gray-500">Promedio Sector</div>
+                    </div>
+                </div>
+
+                <!--Progress Bar-->
+                <div class="mb-5">
+                    <div class="d-flex justify-content-between fs-7 mb-2">
+                        <span class="text-gray-600">Tu acción</span>
+                        <span class="fw-bold text-gray-800">{{ benchmarking.eficiencia|floatformat:1 }}%</span>
+                    </div>
+                    <div class="progress bg-light-secondary" style="height: 12px;">
+                        <div class="progress-bar bg-primary" style="width: {{ benchmarking.eficiencia }}%"></div>
+                    </div>
+                </div>
+
+                <!--Benchmark Chart-->
+                <div id="benchmark_chart"></div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!--begin::Cost-Effectiveness Analysis-->
+    {% if costo_efectividad %}
+        <div class="card mb-5 mb-xl-8">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ki-duotone ki-graph-up fs-2 text-success me-2">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                        <span class="path3"></span>
+                        <span class="path4"></span>
+                        <span class="path5"></span>
+                        <span class="path6"></span>
+                    </i>
+                    Análisis de Costo-Efectividad por Indicador
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle gs-0 gy-4">
+                        <thead>
+                        <tr class="fw-bold text-muted bg-light">
+                            <th class="min-w-200px">Indicador</th>
+                            <th class="min-w-100px text-center">Presupuesto Asignado</th>
+                            <th class="min-w-100px text-center">Mejora Lograda</th>
+                            <th class="min-w-100px text-center">Costo por Unidad</th>
+                            <th class="min-w-100px text-center">Score Efectividad</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in costo_efectividad %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px symbol-circle me-3">
+                                                <span class="symbol-label bg-light-primary">
+                                                    <i class="ki-duotone ki-abstract-26 fs-4 text-primary">
+                                                        <span class="path1"></span>
+                                                        <span class="path2"></span>
+                                                    </i>
+                                                </span>
+                                        </div>
+                                        <div>
+                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary mb-1 fs-6">
+                                                {{ item.indicador.nombre }}
+                                            </a>
+                                            <span class="text-muted fw-semibold d-block fs-7">
+                                                    {{ item.indicador.tipo_indicador.nombre }}
+                                                </span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                        <span class="text-gray-800 fw-bold fs-6">
+                                            {{ item.presupuesto_asignado|formato_numero:"$" }}
+                                        </span>
+                                </td>
+                                <td class="text-center">
+                                        <span class="badge badge-light-{% if item.mejora > 0 %}success{% else %}danger{% endif %}">
+                                            {% if item.mejora > 0 %}+{% endif %}{{ item.mejora|floatformat:2 }}
+                                        </span>
+                                </td>
+                                <td class="text-center">
+                                        <span class="text-gray-800 fw-bold">
+                                            {{ item.costo_por_unidad|formato_numero:"$" }}
+                                        </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="fs-6 fw-bold text-gray-800 mb-1">{{ item.score_efectividad|floatformat:0 }}</span>
+                                        <div class="progress bg-light-success w-75px" style="height: 6px;">
+                                            <div class="progress-bar bg-success"
+                                                 style="width: {{ item.score_efectividad }}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!--begin::Detailed Budget Table-->
+    <div class="card mb-5 mb-xl-8">
+        <div class="card-header border-0 pt-5">
+            <h3 class="card-title align-items-start flex-column">
+                <span class="card-label fw-bold fs-3 mb-1">Detalle de Presupuestos Planificados</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">{{ presupuestos_planificados|length }} presupuesto{{ presupuestos_planificados|length|pluralize }}</span>
+            </h3>
+            <div class="card-toolbar">
+                <input type="text" class="form-control form-control-solid w-250px" id="search_budget"
+                       placeholder="Buscar presupuesto..."/>
+            </div>
+        </div>
+        <div class="card-body py-3">
+            <div class="table-responsive">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4" id="table_presupuestos">
+                    <thead>
+                    <tr class="fw-bold text-muted">
+                        <th class="min-w-150px">Tipo</th>
+                        <th class="min-w-100px">Categoría</th>
+                        <th class="min-w-120px">Fuente</th>
+                        <th class="min-w-100px text-end">Planificado</th>
+                        <th class="min-w-100px text-end">Ejecutado</th>
+                        <th class="min-w-120px text-center">% Ejecución</th>
+                        <th class="min-w-100px text-end">Restante</th>
+                        <th class="min-w-100px text-center">Estado</th>
+                        <th class="min-w-100px text-center">Vigencia</th>
+                        <th class="min-w-100px text-end">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for pp in presupuestos_planificados %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-30px symbol-circle me-3">
+                                            <span class="symbol-label bg-light-primary">
+                                                <i class="ki-duotone ki-dollar fs-5 text-primary">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                    <span class="path3"></span>
+                                                </i>
+                                            </span>
+                                    </div>
+                                    <div>
+                                        <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block fs-6">
+                                            {{ pp.tipo_presupuesto.nombre }}
+                                        </a>
+                                        <span class="text-muted fw-semibold text-muted d-block fs-7">
+                                                {{ pp.tipo_moneda.nombre }}
+                                            </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if pp.categoria %}
+                                    <span class="badge badge-light">{{ pp.categoria.nombre }}</span>
+                                {% else %}
+                                    <span class="text-muted">Sin categoría</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                    <span class="text-gray-900 fw-semibold d-block fs-7">
+                                        {{ pp.fuente_financiamiento|truncatechars:30 }}
+                                    </span>
+                            </td>
+                            <td class="text-end">
+                                    <span class="text-gray-900 fw-bold fs-6">
+                                        {{ pp.monto|formato_numero:pp.tipo_moneda.simbolo }}
+                                    </span>
+                            </td>
+                            <td class="text-end">
+                                    <span class="text-gray-900 fw-bold fs-6">
+                                        {{ pp.get_monto_total_ejecutado|formato_numero:pp.tipo_moneda.simbolo }}
+                                    </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex flex-column w-100">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted fs-7">{{ pp.get_porcentaje_monto_ejecutado|floatformat:1 }}%</span>
+                                    </div>
+                                    <div class="progress bg-light-primary" style="height: 6px;">
+                                        <div class="progress-bar bg-{% if pp.get_porcentaje_monto_ejecutado < 50 %}danger{% elif pp.get_porcentaje_monto_ejecutado < 80 %}warning{% else %}success{% endif %}"
+                                             style="width: {{ pp.get_porcentaje_monto_ejecutado }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                    <span class="text-gray-900 fw-bold fs-6">
+                                        {{ pp.get_monto_restante|formato_numero:pp.tipo_moneda.simbolo }}
+                                    </span>
+                            </td>
+                            <td class="text-center">
+                                    <span class="badge badge-light-{{ pp.estado_presupuesto.nombre|lower }}">
+                                        {{ pp.estado_presupuesto.nombre }}
+                                    </span>
+                            </td>
+                            <td class="text-center">
+                                {% if pp.dias_restantes_vigencia %}
+                                    {% if pp.dias_restantes_vigencia > 30 %}
+                                        <span class="badge badge-light-success">
+                                                <i class="ki-duotone ki-check fs-7"></i>
+                                                {{ pp.dias_restantes_vigencia }} días
+                                            </span>
+                                    {% elif pp.dias_restantes_vigencia > 0 %}
+                                        <span class="badge badge-light-warning">
+                                                <i class="ki-duotone ki-timer fs-7"></i>
+                                                {{ pp.dias_restantes_vigencia }} días
+                                            </span>
+                                    {% else %}
+                                        <span class="badge badge-light-danger">
+                                                <i class="ki-duotone ki-cross fs-7"></i>
+                                                Vencido
+                                            </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted fs-7">Sin límite</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary"
+                                        data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                    <i class="ki-duotone ki-dots-horizontal fs-2">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                        <span class="path3"></span>
+                                    </i>
+                                </button>
+                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                     data-kt-menu="true">
+                                    <div class="menu-item px-3">
+                                        <a href="{% url 'registro:editar_presupuesto_planificado' accion.id pp.id %}"
+                                           class="menu-link px-3">
+                                            <i class="ki-duotone ki-pencil fs-5 me-2">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                            Editar
+                                        </a>
+                                    </div>
+                                    <div class="menu-item px-3">
+                                        <a href="{% url 'registro:registrar_presupuesto_ejecutado' accion.id pp.id %}"
+                                           class="menu-link px-3">
+                                            <i class="ki-duotone ki-check-circle fs-5 me-2">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                            Ejecutar
+                                        </a>
+                                    </div>
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3"
+                                           onclick="verDetalleEjecucion({{ pp.id }})">
+                                            <i class="ki-duotone ki-eye fs-5 me-2">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                                <span class="path3"></span>
+                                            </i>
+                                            Ver Detalle
+                                        </a>
+                                    </div>
+                                    <div class="separator my-2"></div>
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3 text-danger"
+                                           data-bs-toggle="modal"
+                                           data-bs-target="#modal_eliminar_{{ pp.id }}">
+                                            <i class="ki-duotone ki-trash fs-5 me-2">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                                <span class="path3"></span>
+                                                <span class="path4"></span>
+                                                <span class="path5"></span>
+                                            </i>
+                                            Eliminar
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!--begin::Budget Recommendations-->
+    {% if recomendaciones %}
+        <div class="card mb-5 mb-xl-8">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ki-duotone ki-abstract-26 fs-2 text-info me-2">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                    </i>
+                    Recomendaciones Estratégicas
+                </h3>
+            </div>
+            <div class="card-body">
+                {% for rec in recomendaciones %}
+                    <div class="d-flex align-items-start mb-7">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-{{ rec.tipo_color }}">
+                                <i class="ki-duotone {{ rec.icono }} fs-2x text-{{ rec.tipo_color }}">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                    <span class="path3"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="fw-bold text-gray-900 fs-5">{{ rec.titulo }}</span>
+                                <span class="badge badge-light-{{ rec.tipo_color }} ms-2">{{ rec.tipo|upper }}</span>
+                            </div>
+                            <p class="text-gray-700 fs-6 mb-3">{{ rec.descripcion }}</p>
+                            {% if rec.monto_sugerido %}
+                                <div class="alert alert-light-{{ rec.tipo_color }} p-3">
+                                    <strong>Acción sugerida:</strong> {{ rec.accion }}
+                                    <br>
+                                    <strong>Monto:</strong> {{ rec.monto_sugerido|formato_numero:"$" }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if not forloop.last %}
+                        <div class="separator separator-dashed"></div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!--begin::Modal Exportar-->
+    <div class="modal fade" tabindex="-1" id="modal_exportar">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Exportar Reporte Presupuestario</h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
+                        <i class="ki-duotone ki-cross fs-1">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-5">
+                        <label class="form-label">Formato de Exportación</label>
+                        <select class="form-select" id="export_format">
+                            <option value="pdf">PDF - Reporte Ejecutivo</option>
+                            <option value="excel">Excel - Datos Detallados</option>
+                            <option value="csv">CSV - Datos Tabulares</option>
+                        </select>
+                    </div>
+                    <div class="mb-5">
+                        <label class="form-label">Incluir en el Reporte</label>
+                        <div class="form-check form-check-custom mb-3">
+                            <input class="form-check-input" type="checkbox" value="resumen" id="include_resumen"
+                                   checked/>
+                            <label class="form-check-label" for="include_resumen">
+                                Resumen Ejecutivo
+                            </label>
+                        </div>
+                        <div class="form-check form-check-custom mb-3">
+                            <input class="form-check-input" type="checkbox" value="alertas" id="include_alertas"
+                                   checked/>
+                            <label class="form-check-label" for="include_alertas">
+                                Alertas y Notificaciones
+                            </label>
+                        </div>
+                        <div class="form-check form-check-custom mb-3">
+                            <input class="form-check-input" type="checkbox" value="proyecciones"
+                                   id="include_proyecciones" checked/>
+                            <label class="form-check-label" for="include_proyecciones">
+                                Proyecciones y Forecasting
+                            </label>
+                        </div>
+                        <div class="form-check form-check-custom mb-3">
+                            <input class="form-check-input" type="checkbox" value="graficos" id="include_graficos"
+                                   checked/>
+                            <label class="form-check-label" for="include_graficos">
+                                Gráficos y Visualizaciones
+                            </label>
+                        </div>
+                        <div class="form-check form-check-custom">
+                            <input class="form-check-input" type="checkbox" value="detalle" id="include_detalle"/>
+                            <label class="form-check-label" for="include_detalle">
+                                Detalle Completo de Ejecución
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="exportarReporte()">
+                        <i class="ki-duotone ki-exit-up fs-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                        Exportar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    <script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script>
+        $(document).ready(function () {
+            // ============================================
+            // BUDGET HEALTH GAUGE
+            // ============================================
+            var gaugeOptions = {
+                series: [{{ budget_health_score }}],
+                chart: {
+                    height: 200,
+                    type: 'radialBar',
+                },
+                plotOptions: {
+                    radialBar: {
+                        hollow: {
+                            size: '70%',
+                        },
+                        dataLabels: {
+                            show: false
+                        },
+                        track: {
+                            background: 'rgba(255,255,255,0.3)',
+                        }
+                    },
+                },
+                colors: ['#ffffff'],
+                stroke: {
+                    lineCap: 'round'
+                },
+            };
+
+            var gaugeChart = new ApexCharts(document.querySelector("#budget_health_gauge"), gaugeOptions);
+            gaugeChart.render();
+
+            // ============================================
+            // BURN RATE CHART
+            // ============================================
+            var burnRateOptions = {
+                series: [
+                    {
+                        name: 'Ejecutado Acumulado',
+                        data: {{ burn_rate_data.ejecutado|safe }}
+                    },
+                    {
+                        name: 'Planificado',
+                        data: {{ burn_rate_data.planificado|safe }}
+                    }
+                ],
+                chart: {
+                    height: 350,
+                    type: 'line',
+                    toolbar: {
+                        show: true
+                    },
+                    zoom: {
+                        enabled: true
+                    }
+                },
+                colors: ['#1B84FF', '#50CD89'],
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    width: [3, 2],
+                    curve: 'smooth',
+                    dashArray: [0, 5]
+                },
+                title: {
+                    text: 'Ejecución vs Planificación',
+                    align: 'left',
+                    style: {
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                    }
+                },
+                grid: {
+                    borderColor: '#e7e7e7',
+                    strokeDashArray: 5,
+                },
+                markers: {
+                    size: 4,
+                    strokeWidth: 2,
+                    fillOpacity: 1,
+                    strokeOpacity: 1,
+                    hover: {
+                        size: 6
+                    }
+                },
+                xaxis: {
+                    categories: {{ burn_rate_data.fechas|safe }},
+                    title: {
+                        text: 'Fecha'
+                    }
+                },
+                yaxis: {
+                    title: {
+                        text: 'Monto Acumulado'
+                    },
+                    labels: {
+                        formatter: function (val) {
+                            return '$' + val.toLocaleString();
+                        }
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'right'
+                },
+                tooltip: {
+                    shared: true,
+                    intersect: false,
+                    y: {
+                        formatter: function (val) {
+                            return '$' + val.toLocaleString();
+                        }
+                    }
+                }
+            };
+
+            var burnRateChart = new ApexCharts(document.querySelector("#burn_rate_chart"), burnRateOptions);
+            burnRateChart.render();
+
+            // ============================================
+            // WATERFALL CHART
+            // ============================================
+            var waterfallOptions = {
+                series: [{
+                    name: 'Monto',
+                    data: {{ waterfall_data.valores|safe }}
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                        show: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%',
+                        dataLabels: {
+                            position: 'top'
+                        }
+                    }
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val) {
+                        return '$' + Math.abs(val).toLocaleString();
+                    },
+                    offsetY: -20,
+                    style: {
+                        fontSize: '12px',
+                        colors: ['#304758']
+                    }
+                },
+                colors: ['#1B84FF', '#FFC700', '#F1416C', '#50CD89'],
+                xaxis: {
+                    categories: {{ waterfall_data.categorias|safe }}
+                },
+                yaxis: {
+                    labels: {
+                        formatter: function (val) {
+                            return '$' + val.toLocaleString();
+                        }
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return '$' + Math.abs(val).toLocaleString();
+                        }
+                    }
+                }
+            };
+
+            var waterfallChart = new ApexCharts(document.querySelector("#waterfall_chart"), waterfallOptions);
+            waterfallChart.render();
+
+            // ============================================
+            // CATEGORY CHART
+            // ============================================
+            var categoryOptions = {
+                series: {{ category_data.series|safe }},
+                chart: {
+                    type: 'donut',
+                    height: 350
+                },
+                labels: {{ category_data.labels|safe }},
+                colors: ['#1B84FF', '#50CD89', '#FFC700', '#F1416C', '#7239EA'],
+                legend: {
+                    position: 'bottom'
+                },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '60%',
+                            labels: {
+                                show: true,
+                                total: {
+                                    showAlways: true,
+                                    show: true,
+                                    label: 'Total',
+                                    formatter: function (w) {
+                                        return '$' + w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return '$' + val.toLocaleString();
+                        }
+                    }
+                }
+            };
+
+            var categoryChart = new ApexCharts(document.querySelector("#category_chart"), categoryOptions);
+            categoryChart.render();
+
+            // ============================================
+            // BENCHMARK CHART
+            // ============================================
+            {% if benchmarking %}
+                var benchmarkOptions = {
+                    series: [{
+                        name: 'Eficiencia',
+                        data: {{ benchmarking.series_data|safe }}
+                    }],
+                    chart: {
+                        type: 'bar',
+                        height: 300,
+                        toolbar: {
+                            show: false
+                        }
+                    },
+                    plotOptions: {
+                        bar: {
+                            horizontal: true,
+                            dataLabels: {
+                                position: 'top'
+                            }
+                        }
+                    },
+                    colors: ['#1B84FF'],
+                    dataLabels: {
+                        enabled: true,
+                        formatter: function (val) {
+                            return val.toFixed(1) + '%';
+                        },
+                        offsetX: 30,
+                        style: {
+                            fontSize: '12px',
+                            colors: ['#304758']
+                        }
+                    },
+                    xaxis: {
+                        categories: {{ benchmarking.labels|safe }},
+                        labels: {
+                            formatter: function (val) {
+                                return val.toFixed(1) + '%';
+                            }
+                        }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val) {
+                                return val.toFixed(2) + '%';
+                            }
+                        }
+                    }
+                };
+
+                var benchmarkChart = new ApexCharts(document.querySelector("#benchmark_chart"), benchmarkOptions);
+                benchmarkChart.render();
+            {% endif %}
+
+            // ============================================
+            // TABLE SEARCH
+            // ============================================
+            $('#search_budget').on('keyup', function () {
+                var value = $(this).val().toLowerCase();
+                $('#table_presupuestos tbody tr').filter(function () {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+                });
+            });
+
+            // ============================================
+            // BURN RATE CURRENCY SELECTOR
+            // ============================================
+            $('#burn_rate_moneda').on('change', function () {
+                var monedaId = $(this).val();
+                // Recargar datos del gráfico según la moneda seleccionada
+                loadBurnRateData(monedaId);
+            });
+        });
+
+        // ============================================
+        // HELPER FUNCTIONS
+        // ============================================
+        function verDetalleEjecucion(presupuestoId) {
+            // Implementar modal o navegación a detalle
+            window.location.href = '/presupuesto/' + presupuestoId + '/detalle/';
+        }
+
+        function exportarReporte() {
+            var formato = $('#export_format').val();
+            var opciones = {
+                resumen: $('#include_resumen').is(':checked'),
+                alertas: $('#include_alertas').is(':checked'),
+                proyecciones: $('#include_proyecciones').is(':checked'),
+                graficos: $('#include_graficos').is(':checked'),
+                detalle: $('#include_detalle').is(':checked')
+            };
+
+            // Crear URL con parámetros
+            var url = '{% url "registro:exportar_reporte_presupuesto" accion.id %}' +
+                '?formato=' + formato +
+                '&opciones=' + JSON.stringify(opciones);
+
+            // Abrir en nueva ventana para descarga
+            window.open(url, '_blank');
+
+            // Cerrar modal
+            $('#modal_exportar').modal('hide');
+        }
+
+        function loadBurnRateData(monedaId) {
+            // AJAX call para obtener datos específicos de la moneda
+            $.ajax({
+                url: '{% url "registro:burn_rate_data" accion.id %}',
+                data: {
+                    moneda_id: monedaId
+                },
+                success: function (data) {
+                    // Actualizar gráfico con nuevos datos
+                    burnRateChart.updateSeries([
+                        {
+                            name: 'Ejecutado Acumulado',
+                            data: data.ejecutado
+                        },
+                        {
+                            name: 'Planificado',
+                            data: data.planificado
+                        }
+                    ]);
+                }
+            });
+        }
+
+        // ============================================
+        // RESPONSIVE CHARTS
+        // ============================================
+        function makeChartsResponsive() {
+            var charts = [burnRateChart, waterfallChart, categoryChart];
+            if (typeof benchmarkChart !== 'undefined') {
+                charts.push(benchmarkChart);
+            }
+
+            charts.forEach(chart => {
+                if (chart) {
+                    chart.updateOptions({
+                        chart: {
+                            height: window.innerWidth < 768 ? 250 : 350
+                        }
+                    });
+                }
+            });
+        }
+
+        window.addEventListener('resize', makeChartsResponsive);
+    </script>
+{% endblock %}

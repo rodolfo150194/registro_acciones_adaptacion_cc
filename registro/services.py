@@ -1,12 +1,21 @@
+import base64
 import statistics
+from datetime import timedelta, datetime
+from io import BytesIO
+from typing import List, Dict, Any, Optional
 
 import numpy as np
 from django.db.models import Avg, Min, Max, StdDev
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from sympy import sympify, Symbol
+from matplotlib import pyplot as plt
+from sympy import sympify, Symbol, stats
+from weasyprint import HTML, CSS
+from weasyprint.text.fonts import FontConfiguration
 
-from registro.models import ResultadoVariable
+from nomencladores.models import TipoMoneda, CategoriaPresupuesto
+from registro.models import ResultadoVariable, Accion
 from registro.utils import data_chart_line
 
 
@@ -413,14 +422,17 @@ class FormulaCalculatorService:
     @staticmethod
     def calculate_formula_result(formula_string, variables_resultados):
         """Calcula el resultado de una fórmula con variables"""
+        # try:
         formula = sympify(formula_string)
         symbols = [Symbol(var.variable_indicador.variable) for var in variables_resultados]
         substitutions = {
             symbol: float(var.valor)
             for var, symbol in zip(variables_resultados, symbols)
         }
-
+        # except ZeroDivisionError:
+        #     return 0
         return formula.subs(substitutions)
+
 class InsightGeneratorService:
     """Servicio para generar insights automáticos"""
 
@@ -1110,3 +1122,999 @@ class ClimateInsightAnalyzer:
         # ...
 
         return insights
+
+
+class PresupuestoAnalyticsService:
+    """Servicio para análisis avanzado de presupuestos"""
+
+    @staticmethod
+    def calculate_budget_health_score(accion) -> int:
+        """Calcula un score de salud presupuestaria (0-100)"""
+        score = 0
+        presupuestos = accion.presupuestos_planificados.all()
+
+        if not presupuestos.exists():
+            return 0
+
+        # 1. Análisis de ejecución (40 puntos)
+        tasas_ejecucion = []
+        for pp in presupuestos:
+            tasa = pp.get_porcentaje_monto_ejecutado
+            tasas_ejecucion.append(tasa)
+
+        if tasas_ejecucion:
+            tasa_promedio = sum(tasas_ejecucion) / len(tasas_ejecucion)
+            if tasa_promedio >= 80:
+                score += 40
+            elif tasa_promedio >= 60:
+                score += 30
+            elif tasa_promedio >= 40:
+                score += 20
+            elif tasa_promedio >= 20:
+                score += 10
+
+        # 2. Puntualidad en ejecución (30 puntos)
+        puntuales = 0
+        total_con_vigencia = 0
+        for pp in presupuestos:
+            if hasattr(pp, 'fecha_fin_vigencia') and pp.fecha_fin_vigencia:
+                total_con_vigencia += 1
+                if pp.dias_restantes_vigencia and pp.dias_restantes_vigencia > 0:
+                    puntuales += 1
+
+        if total_con_vigencia > 0:
+            porcentaje_puntual = (puntuales / total_con_vigencia) * 100
+            if porcentaje_puntual >= 90:
+                score += 30
+            elif porcentaje_puntual >= 70:
+                score += 20
+            elif porcentaje_puntual >= 50:
+                score += 10
+        else:
+            score += 15  # Puntuación media si no hay vigencias definidas
+
+        # 3. Diversificación de fuentes (30 puntos)
+        fuentes_unicas = presupuestos.values('fuente_financiamiento').distinct().count()
+        if fuentes_unicas >= 4:
+            score += 30
+        elif fuentes_unicas >= 3:
+            score += 20
+        elif fuentes_unicas >= 2:
+            score += 10
+
+        return min(100, score)
+
+    @staticmethod
+    def detect_budget_anomalies(accion) -> List[Dict[str, Any]]:
+        """Detecta anomalías en la ejecución presupuestaria"""
+        anomalias = []
+
+        for pp in accion.presupuestos_planificados.all():
+            porcentaje_ejecutado = pp.get_porcentaje_monto_ejecutado
+
+            # Sobre-ejecución
+            if porcentaje_ejecutado > 110:
+                anomalias.append({
+                    'presupuesto': pp,
+                    'tipo': 'sobreejecucion',
+                    'nivel': 'critico',
+                    'nivel_color': 'danger',
+                    'icono': 'ki-shield-cross',
+                    'titulo': f'Sobre-ejecución en {pp.tipo_presupuesto.nombre}',
+                    'mensaje': f'Presupuesto excedido en {porcentaje_ejecutado - 100:.1f}%',
+                    'accion_recomendada': 'Revisar aprobaciones y ajustar presupuesto inmediatamente'
+                })
+            elif porcentaje_ejecutado > 100:
+                anomalias.append({
+                    'presupuesto': pp,
+                    'tipo': 'sobreejecucion_leve',
+                    'nivel': 'alto',
+                    'nivel_color': 'warning',
+                    'icono': 'ki-information-5',
+                    'titulo': f'Ejecución al límite en {pp.tipo_presupuesto.nombre}',
+                    'mensaje': f'Presupuesto ejecutado al {porcentaje_ejecutado:.1f}%',
+                    'accion_recomendada': 'Monitorear de cerca futuras ejecuciones'
+                })
+
+            # Sub-ejecución crónica
+            if porcentaje_ejecutado < 30 and pp.presupuestos_ejecutados.count() >= 2:
+                anomalias.append({
+                    'presupuesto': pp,
+                    'tipo': 'subejecucion',
+                    'nivel': 'medio',
+                    'nivel_color': 'info',
+                    'icono': 'ki-arrow-down',
+                    'titulo': f'Baja ejecución en {pp.tipo_presupuesto.nombre}',
+                    'mensaje': f'Solo {porcentaje_ejecutado:.1f}% ejecutado con múltiples desembolsos',
+                    'accion_recomendada': 'Evaluar necesidad real del presupuesto o acelerar ejecución'
+                })
+
+            # Verificar vigencia
+            if hasattr(pp, 'dias_restantes_vigencia') and pp.dias_restantes_vigencia is not None:
+                if pp.dias_restantes_vigencia < 30 and porcentaje_ejecutado < 80:
+                    anomalias.append({
+                        'presupuesto': pp,
+                        'tipo': 'vencimiento_cercano',
+                        'nivel': 'alto',
+                        'nivel_color': 'warning',
+                        'icono': 'ki-calendar-tick',
+                        'titulo': f'Vigencia próxima a vencer: {pp.tipo_presupuesto.nombre}',
+                        'mensaje': f'Quedan {pp.dias_restantes_vigencia} días y solo {porcentaje_ejecutado:.1f}% ejecutado',
+                        'accion_recomendada': 'Acelerar ejecución o solicitar extensión de vigencia'
+                    })
+                elif pp.dias_restantes_vigencia < 0:
+                    anomalias.append({
+                        'presupuesto': pp,
+                        'tipo': 'vencido',
+                        'nivel': 'critico',
+                        'nivel_color': 'danger',
+                        'icono': 'ki-cross-circle',
+                        'titulo': f'Presupuesto vencido: {pp.tipo_presupuesto.nombre}',
+                        'mensaje': f'Vigencia expirada hace {abs(pp.dias_restantes_vigencia)} días',
+                        'accion_recomendada': 'Regularizar situación o cancelar presupuesto'
+                    })
+
+            # Anomalías en velocidad de ejecución
+            velocidad = pp.velocidad_ejecucion_mensual if hasattr(pp, 'velocidad_ejecucion_mensual') else 0
+            if velocidad > 0:
+                meses_para_completar = pp.get_monto_restante / velocidad
+                if meses_para_completar > 12:
+                    anomalias.append({
+                        'presupuesto': pp,
+                        'tipo': 'ejecucion_lenta',
+                        'nivel': 'medio',
+                        'nivel_color': 'info',
+                        'icono': 'ki-timer',
+                        'titulo': f'Ejecución lenta en {pp.tipo_presupuesto.nombre}',
+                        'mensaje': f'A este ritmo tomará {meses_para_completar:.1f} meses completar',
+                        'accion_recomendada': 'Revisar planificación y obstáculos en ejecución'
+                    })
+
+        return anomalias
+
+    @staticmethod
+    def calculate_execution_summary(accion) -> Dict[str, Any]:
+        """Calcula resumen ejecutivo de ejecución presupuestaria"""
+        resumen = {
+            'total_planificado': [],
+            'total_ejecutado': [],
+            'saldo_disponible': [],
+            'velocidad_mensual': []
+        }
+
+        # Agrupar por moneda
+        for moneda in TipoMoneda.objects.filter(estado=True):
+            presupuestos = accion.presupuestos_planificados.filter(tipo_moneda=moneda)
+
+            if presupuestos.exists():
+                total_plan = sum(pp.monto for pp in presupuestos)
+                total_ejec = sum(pp.get_monto_total_ejecutado for pp in presupuestos)
+                saldo = total_plan - total_ejec
+
+                # Calcular velocidad mensual promedio
+                velocidades = []
+                for pp in presupuestos:
+                    if hasattr(pp, 'velocidad_ejecucion_mensual'):
+                        vel = pp.velocidad_ejecucion_mensual
+                        if vel > 0:
+                            velocidades.append(vel)
+
+                vel_promedio = sum(velocidades) / len(velocidades) if velocidades else 0
+
+                resumen['total_planificado'].append({
+                    'moneda': moneda.nombre,
+                    'moneda_simbolo': moneda.simbolo or '$',
+                    'monto_total': total_plan
+                })
+
+                resumen['total_ejecutado'].append({
+                    'moneda': moneda.nombre,
+                    'moneda_simbolo': moneda.simbolo or '$',
+                    'monto_total': total_ejec,
+                    'porcentaje': (total_ejec / total_plan * 100) if total_plan > 0 else 0
+                })
+
+                resumen['saldo_disponible'].append({
+                    'moneda': moneda.nombre,
+                    'moneda_simbolo': moneda.simbolo or '$',
+                    'monto_total': saldo
+                })
+
+                resumen['velocidad_mensual'].append({
+                    'moneda': moneda.nombre,
+                    'moneda_simbolo': moneda.simbolo or '$',
+                    'velocidad': vel_promedio
+                })
+
+        return resumen
+
+
+class PresupuestoForecastService:
+    """Servicio para proyecciones presupuestarias"""
+
+    @staticmethod
+    def forecast_budget_completion(accion) -> Optional[Dict[str, Any]]:
+        """Proyecta cuándo se completará el presupuesto"""
+        presupuestos = accion.presupuestos_planificados.all()
+
+        if not presupuestos.exists():
+            return None
+
+        proyecciones_por_moneda = []
+
+        for moneda in TipoMoneda.objects.filter(estado=True):
+            presupuestos_moneda = presupuestos.filter(tipo_moneda=moneda)
+
+            if not presupuestos_moneda.exists():
+                continue
+
+            # Calcular velocidad promedio de ejecución
+            velocidades = []
+            for pp in presupuestos_moneda:
+                ejecutados = pp.presupuestos_ejecutados.all().order_by('fecha_inicio')
+
+                if ejecutados.count() >= 2:
+                    primer_ejecutado = ejecutados.first()
+                    ultimo_ejecutado = ejecutados.last()
+
+                    dias_transcurridos = (ultimo_ejecutado.fecha_fin - primer_ejecutado.fecha_inicio).days
+                    if dias_transcurridos > 0:
+                        meses = dias_transcurridos / 30.44
+                        monto_total = sum(e.monto for e in ejecutados)
+                        velocidad = monto_total / meses
+                        velocidades.append(velocidad)
+
+            if velocidades:
+                velocidad_promedio = sum(velocidades) / len(velocidades)
+                monto_restante = sum(pp.get_monto_restante for pp in presupuestos_moneda)
+
+                if velocidad_promedio > 0:
+                    meses_estimados = monto_restante / velocidad_promedio
+                    fecha_estimada = timezone.now().date() + timedelta(days=int(meses_estimados * 30.44))
+
+                    # Determinar tendencia
+                    if len(velocidades) >= 2:
+                        velocidad_reciente = velocidades[-1]
+                        velocidad_anterior = sum(velocidades[:-1]) / len(velocidades[:-1])
+                        tendencia = 'acelerada' if velocidad_reciente > velocidad_anterior * 1.1 else 'normal'
+                    else:
+                        tendencia = 'normal'
+
+                    # Evaluar riesgo de retraso
+                    riesgo_retraso = False
+                    mensaje_riesgo = ''
+
+                    if hasattr(accion, 'fecha_fin') and accion.fecha_fin:
+                        dias_hasta_fin = (accion.fecha_fin - timezone.now().date()).days
+                        dias_estimados = meses_estimados * 30.44
+
+                        if dias_estimados > dias_hasta_fin:
+                            riesgo_retraso = True
+                            dias_exceso = int(dias_estimados - dias_hasta_fin)
+                            mensaje_riesgo = f'La proyección excede la fecha límite en {dias_exceso} días'
+
+                    proyecciones_por_moneda.append({
+                        'moneda': moneda.nombre,
+                        'meses_estimados': round(meses_estimados, 1),
+                        'fecha_estimada': fecha_estimada,
+                        'velocidad_mensual': velocidad_promedio,
+                        'tendencia': tendencia,
+                        'riesgo_retraso': riesgo_retraso,
+                        'mensaje_riesgo': mensaje_riesgo
+                    })
+
+        return proyecciones_por_moneda[0] if proyecciones_por_moneda else None
+
+    @staticmethod
+    def recommend_budget_adjustments(accion) -> List[Dict[str, Any]]:
+        """Recomienda ajustes presupuestarios basados en ejecución histórica"""
+        recomendaciones = []
+
+        for pp in accion.presupuestos_planificados.all():
+            tasa_ejecucion = pp.get_porcentaje_monto_ejecutado
+
+            # Calcular días transcurridos desde fecha de inicio de acción
+            if accion.fecha_inicio:
+                dias_transcurridos = (timezone.now().date() - accion.fecha_inicio).days
+            else:
+                dias_transcurridos = 180  # Default
+
+            # Recomendación de reasignación por baja ejecución
+            if tasa_ejecucion < 50 and dias_transcurridos > 180:
+                monto_sugerido = pp.get_monto_restante * 0.5
+                recomendaciones.append({
+                    'presupuesto': pp,
+                    'tipo': 'reasignacion',
+                    'tipo_color': 'warning',
+                    'icono': 'ki-arrows-circle',
+                    'titulo': f'Reasignación sugerida: {pp.tipo_presupuesto.nombre}',
+                    'descripcion': f'Con solo {tasa_ejecucion:.1f}% ejecutado en {dias_transcurridos} días, '
+                                   f'considerar reasignar parte del presupuesto a otras categorías con mayor demanda.',
+                    'monto_sugerido': monto_sugerido,
+                    'accion': 'Reasignar 50% del saldo a categorías con sobre-ejecución'
+                })
+
+            # Recomendación de ampliación por alta demanda
+            elif tasa_ejecucion > 90 and pp.get_monto_restante > 0:
+                monto_sugerido = pp.monto * 0.2  # 20% adicional
+                recomendaciones.append({
+                    'presupuesto': pp,
+                    'tipo': 'ampliacion',
+                    'tipo_color': 'success',
+                    'icono': 'ki-arrow-up',
+                    'titulo': f'Ampliación recomendada: {pp.tipo_presupuesto.nombre}',
+                    'descripcion': f'Con {tasa_ejecucion:.1f}% ejecutado, la alta demanda sugiere '
+                                   f'necesidad de recursos adicionales para mantener el ritmo.',
+                    'monto_sugerido': monto_sugerido,
+                    'accion': f'Ampliar presupuesto en 20% ({pp.tipo_moneda.simbolo}{monto_sugerido:,.2f})'
+                })
+
+            # Recomendación de revisión por sobre-ejecución
+            elif tasa_ejecucion > 100:
+                recomendaciones.append({
+                    'presupuesto': pp,
+                    'tipo': 'revision',
+                    'tipo_color': 'danger',
+                    'icono': 'ki-shield-cross',
+                    'titulo': f'Revisión urgente: {pp.tipo_presupuesto.nombre}',
+                    'descripcion': f'Sobre-ejecución de {tasa_ejecucion - 100:.1f}% requiere '
+                                   f'análisis de causas y regularización presupuestaria.',
+                    'monto_sugerido': pp.get_monto_total_ejecutado - pp.monto,
+                    'accion': 'Auditar desembolsos y ajustar presupuesto planificado'
+                })
+
+            # Recomendación de aceleración
+            elif tasa_ejecucion < 40 and dias_transcurridos > 120:
+                recomendaciones.append({
+                    'presupuesto': pp,
+                    'tipo': 'aceleracion',
+                    'tipo_color': 'info',
+                    'icono': 'ki-rocket',
+                    'titulo': f'Acelerar ejecución: {pp.tipo_presupuesto.nombre}',
+                    'descripcion': f'Ritmo de ejecución lento ({tasa_ejecucion:.1f}% en {dias_transcurridos} días). '
+                                   f'Identificar y remover obstáculos.',
+                    'accion': 'Revisar procesos de aprobación y desembolso'
+                })
+
+        return recomendaciones
+
+
+class PresupuestoVisualizationService:
+    """Servicio para preparar datos de visualizaciones"""
+
+    @staticmethod
+    def generate_waterfall_data(accion, moneda=None) -> Dict[str, Any]:
+        """Genera datos para gráfico de cascada"""
+        data = {
+            'categorias': [],
+            'valores': []
+        }
+
+        if moneda:
+            presupuestos = accion.presupuestos_planificados.filter(tipo_moneda=moneda)
+        else:
+            # Usar primera moneda disponible
+            presupuestos = accion.presupuestos_planificados.all()
+
+        if not presupuestos.exists():
+            return data
+
+        # Presupuesto planificado total
+        total_planificado = sum(pp.monto for pp in presupuestos)
+        data['categorias'].append('Planificado')
+        data['valores'].append(float(total_planificado))
+
+        # Ejecución por categoría (negativo para mostrar salida)
+        categorias = CategoriaPresupuesto.objects.all()
+        for categoria in categorias:
+            presupuestos_cat = presupuestos.filter(categoria=categoria)
+            if presupuestos_cat.exists():
+                monto_ejecutado = sum(pp.get_monto_total_ejecutado for pp in presupuestos_cat)
+                if monto_ejecutado > 0:
+                    data['categorias'].append(categoria.nombre)
+                    data['valores'].append(-float(monto_ejecutado))
+
+        # Saldo restante
+        saldo = sum(pp.get_monto_restante for pp in presupuestos)
+        data['categorias'].append('Restante')
+        data['valores'].append(float(saldo))
+
+        return data
+
+    @staticmethod
+    def generate_category_chart_data(accion, moneda=None) -> Dict[str, Any]:
+        """Genera datos para gráfico de categorías"""
+        data = {
+            'labels': [],
+            'series': []
+        }
+
+        if moneda:
+            presupuestos = accion.presupuestos_planificados.filter(tipo_moneda=moneda)
+        else:
+            presupuestos = accion.presupuestos_planificados.all()
+
+        categorias = CategoriaPresupuesto.objects.all()
+        for categoria in categorias:
+            presupuestos_cat = presupuestos.filter(categoria=categoria)
+            if presupuestos_cat.exists():
+                total_ejecutado = sum(pp.get_monto_total_ejecutado for pp in presupuestos_cat)
+                if total_ejecutado > 0:
+                    data['labels'].append(categoria.nombre)
+                    data['series'].append(float(total_ejecutado))
+
+        return data
+
+    @staticmethod
+    def generate_burn_rate_data(accion, moneda=None) -> Dict[str, Any]:
+        """Genera datos para gráfico de burn rate"""
+        data = {
+            'fechas': [],
+            'ejecutado': [],
+            'planificado': []
+        }
+
+        if moneda:
+            presupuestos = accion.presupuestos_planificados.filter(tipo_moneda=moneda)
+        else:
+            presupuestos = accion.presupuestos_planificados.all()
+
+        if not presupuestos.exists():
+            return data
+
+        total_planificado = sum(pp.monto for pp in presupuestos)
+
+        # Recopilar todas las ejecuciones
+        todas_ejecuciones = []
+        for pp in presupuestos:
+            for ejecutado in pp.presupuestos_ejecutados.all():
+                todas_ejecuciones.append({
+                    'fecha': ejecutado.fecha_fin,
+                    'monto': ejecutado.monto
+                })
+
+        # Ordenar por fecha
+        todas_ejecuciones.sort(key=lambda x: x['fecha'])
+
+        # Calcular acumulados
+        acumulado = 0
+        for ejecucion in todas_ejecuciones:
+            acumulado += ejecucion['monto']
+            data['fechas'].append(ejecucion['fecha'].strftime('%d/%m/%Y'))
+            data['ejecutado'].append(float(acumulado))
+
+        # Línea de planificado (constante)
+        data['planificado'] = [float(total_planificado)] * len(data['fechas'])
+
+        return data
+
+
+class PresupuestoBenchmarkService:
+    """Servicio para comparación y benchmarking presupuestario"""
+
+    @staticmethod
+    def compare_budget_efficiency(accion) -> Optional[Dict[str, Any]]:
+        """Compara eficiencia presupuestaria con otras acciones del sector"""
+        sector = accion.sector
+        acciones_sector = Accion.objects.filter(sector=sector, publicado=True).exclude(id=accion.id)
+
+        if acciones_sector.count() < 3:
+            return None  # No hay suficientes acciones para comparar
+
+        eficiencias = []
+
+        # Calcular eficiencia de la acción actual
+        eficiencia_actual = PresupuestoBenchmarkService._calculate_efficiency(accion)
+        eficiencias.append({
+            'accion': accion,
+            'eficiencia': eficiencia_actual,
+            'es_actual': True
+        })
+
+        # Calcular eficiencias de otras acciones
+        for acc in acciones_sector:
+            eficiencia = PresupuestoBenchmarkService._calculate_efficiency(acc)
+            if eficiencia > 0:
+                eficiencias.append({
+                    'accion': acc,
+                    'eficiencia': eficiencia,
+                    'es_actual': False
+                })
+
+        # Ordenar por eficiencia
+        eficiencias.sort(key=lambda x: x['eficiencia'], reverse=True)
+
+        # Encontrar posición
+        posicion = next((i + 1 for i, e in enumerate(eficiencias) if e['es_actual']), None)
+
+        if posicion is None:
+            return None
+
+        # Calcular estadísticas
+        valores_eficiencia = [e['eficiencia'] for e in eficiencias if not e['es_actual']]
+        eficiencia_promedio_sector = sum(valores_eficiencia) / len(valores_eficiencia) if valores_eficiencia else 0
+        percentil = ((len(eficiencias) - posicion) / len(eficiencias)) * 100
+
+        # Preparar datos para gráfico
+        series_data = []
+        labels = []
+        for i, e in enumerate(eficiencias[:10]):  # Top 10
+            labels.append(f"Acción {e['accion'].id}" if not e['es_actual'] else "Tu Acción")
+            series_data.append(e['eficiencia'])
+
+        return {
+            'posicion': posicion,
+            'total': len(eficiencias),
+            'percentil': round(percentil, 1),
+            'eficiencia': eficiencia_actual,
+            'eficiencia_promedio_sector': round(eficiencia_promedio_sector, 1),
+            'series_data': series_data,
+            'labels': labels
+        }
+
+    @staticmethod
+    def _calculate_efficiency(accion) -> float:
+        """Calcula score de eficiencia presupuestaria"""
+        presupuestos = accion.presupuestos_planificados.all()
+
+        if not presupuestos.exists():
+            return 0
+
+        score = 0
+
+        # Factor 1: Tasa de ejecución (0-40 puntos)
+        tasas = [pp.get_porcentaje_monto_ejecutado for pp in presupuestos]
+        tasa_promedio = sum(tasas) / len(tasas)
+
+        if 70 <= tasa_promedio <= 95:
+            score += 40  # Rango óptimo
+        elif 60 <= tasa_promedio < 70 or 95 < tasa_promedio <= 100:
+            score += 30
+        elif 50 <= tasa_promedio < 60:
+            score += 20
+        else:
+            score += 10
+
+        # Factor 2: Consistencia (0-30 puntos)
+        if len(tasas) > 1:
+            desviacion = stats.stdev(tasas)
+            if desviacion < 10:
+                score += 30
+            elif desviacion < 20:
+                score += 20
+            elif desviacion < 30:
+                score += 10
+
+        # Factor 3: Impacto en indicadores (0-30 puntos)
+        indicadores_mejorando = 0
+        total_indicadores = accion.indicadores.count()
+
+        if total_indicadores > 0:
+            for indicador in accion.indicadores.all():
+                variacion = indicador.variacion_valor
+                if variacion and variacion.get('interpretacion_cambio_total') == 'positivo':
+                    indicadores_mejorando += 1
+
+            porcentaje_mejora = (indicadores_mejorando / total_indicadores) * 100
+            if porcentaje_mejora >= 80:
+                score += 30
+            elif porcentaje_mejora >= 60:
+                score += 20
+            elif porcentaje_mejora >= 40:
+                score += 10
+
+        return min(100, score)
+
+
+class PresupuestoIndicadorAnalyzer:
+    """Analiza relación entre presupuesto e indicadores"""
+
+    @staticmethod
+    def calculate_cost_effectiveness(accion) -> List[Dict[str, Any]]:
+        """Calcula costo-efectividad por indicador"""
+        resultados = []
+
+        # Calcular presupuesto total
+        presupuesto_total = 0
+        for pp in accion.presupuestos_planificados.all():
+            presupuesto_total += pp.get_monto_total_ejecutado
+
+        if presupuesto_total == 0 or accion.indicadores.count() == 0:
+            return resultados
+
+        # Presupuesto asignado por indicador (distribución equitativa)
+        presupuesto_por_indicador = presupuesto_total / accion.indicadores.count()
+
+        for indicador in accion.indicadores.all():
+            variacion = indicador.variacion_valor
+
+            if variacion and variacion.get('variacion_numerica') is not None:
+                mejora = variacion['variacion_numerica']
+
+                # Calcular costo por unidad de mejora
+                if mejora != 0:
+                    costo_por_unidad = presupuesto_por_indicador / abs(mejora)
+                else:
+                    costo_por_unidad = presupuesto_por_indicador
+
+                # Calcular score de efectividad
+                if mejora > 0 and indicador.direccion_optima == 'incremento':
+                    score = min(100, (abs(mejora) / presupuesto_por_indicador) * 10000)
+                elif mejora < 0 and indicador.direccion_optima == 'decremento':
+                    score = min(100, (abs(mejora) / presupuesto_por_indicador) * 10000)
+                else:
+                    score = 0
+
+                resultados.append({
+                    'indicador': indicador,
+                    'presupuesto_asignado': presupuesto_por_indicador,
+                    'mejora': mejora,
+                    'costo_por_unidad': costo_por_unidad,
+                    'score_efectividad': score
+                })
+
+        return resultados
+
+
+class ReportePDFService:
+    """Servicio para generar diferentes tipos de reportes PDF"""
+
+    def __init__(self, indicador, accion):
+        self.indicador = indicador
+        self.accion = accion
+        self.resultados = indicador.resultados.all().order_by('fecha')
+        self.font_config = FontConfiguration()
+
+    def generar_reporte_completo(self):
+        """Genera reporte completo con todas las secciones"""
+        context = self._preparar_contexto_completo()
+        html_string = render_to_string('reportes/reporte_completo.html', context)
+        return self._generar_pdf(html_string)
+
+    def generar_reporte_ejecutivo(self):
+        """Genera reporte ejecutivo resumido"""
+        context = self._preparar_contexto_ejecutivo()
+        html_string = render_to_string('reportes/reporte_ejecutivo.html', context)
+        return self._generar_pdf(html_string)
+
+    def generar_reporte_estadistico(self):
+        """Genera reporte enfocado en estadísticas"""
+        context = self._preparar_contexto_estadistico()
+        html_string = render_to_string('reportes/reporte_estadistico.html', context)
+        return self._generar_pdf(html_string)
+
+    def generar_reporte_comparativo(self):
+        """Genera reporte comparativo con otros indicadores"""
+        context = self._preparar_contexto_comparativo()
+        html_string = render_to_string('reportes/reporte_comparativo.html', context)
+        return self._generar_pdf(html_string)
+
+    def _preparar_contexto_completo(self):
+        """Prepara contexto para reporte completo"""
+        # Calcular estadísticas
+        statistics_calculator = StatisticsCalculatorService()
+        variation_calculator = VariationCalculatorService()
+        insight_generator = InsightGeneratorService()
+
+        advanced_stats = statistics_calculator.calculate_advanced_statistics(
+            self.resultados, self.indicador
+        )
+        variations = variation_calculator.calculate_variations(
+            self.resultados, self.indicador
+        )
+        insights = insight_generator.generate_insights(
+            self.resultados, advanced_stats, variations, self.indicador
+        )
+
+        # Generar gráficos
+        graficos = {
+            'tendencia': self._generar_grafico_tendencia(),
+            'distribucion': self._generar_grafico_distribucion(),
+            'progreso_meta': self._generar_grafico_meta() if self.indicador.meta_valor else None,
+        }
+
+        return {
+            'indicador': self.indicador,
+            'accion': self.accion,
+            'resultados': self.resultados,
+            'estadisticas': advanced_stats,
+            'variaciones': variations,
+            'insights': insights,
+            'graficos': graficos,
+            'fecha_generacion': datetime.now(),
+            'total_mediciones': self.resultados.count(),
+            'meta_progress': self.indicador.calcular_progreso_meta(),
+        }
+
+    def _preparar_contexto_ejecutivo(self):
+        """Prepara contexto resumido para ejecutivos"""
+        statistics_calculator = StatisticsCalculatorService()
+        advanced_stats = statistics_calculator.calculate_advanced_statistics(
+            self.resultados, self.indicador
+        )
+
+        ultimo_resultado = self.resultados.last()
+        primer_resultado = self.resultados.first()
+
+        # KPIs principales
+        kpis = {
+            'valor_actual': ultimo_resultado.valor if ultimo_resultado else 0,
+            'variacion_total': ((ultimo_resultado.valor - primer_resultado.valor) / primer_resultado.valor * 100)
+            if ultimo_resultado and primer_resultado and primer_resultado.valor != 0 else 0,
+            'promedio': advanced_stats.get('promedio', 0),
+            'tendencia': 'Positiva' if advanced_stats.get('velocidad_mensual', 0) > 0 else 'Negativa',
+            'efectividad': advanced_stats.get('efectividad', {}).get('nivel', 'N/A'),
+        }
+
+        return {
+            'indicador': self.indicador,
+            'accion': self.accion,
+            'kpis': kpis,
+            'grafico_tendencia': self._generar_grafico_tendencia(),
+            'fecha_generacion': datetime.now(),
+            'meta_progress': self.indicador.calcular_progreso_meta(),
+        }
+
+    def _preparar_contexto_estadistico(self):
+        """Prepara contexto con análisis estadístico detallado"""
+        statistics_calculator = StatisticsCalculatorService()
+        advanced_stats = statistics_calculator.calculate_advanced_statistics(
+            self.resultados, self.indicador
+        )
+
+        # Tabla de datos
+        tabla_datos = []
+        for resultado in self.resultados:
+            tabla_datos.append({
+                'fecha': resultado.fecha,
+                'valor': resultado.valor,
+                'observacion': resultado.observacion or '-'
+            })
+
+        return {
+            'indicador': self.indicador,
+            'accion': self.accion,
+            'estadisticas': advanced_stats,
+            'tabla_datos': tabla_datos,
+            'graficos': {
+                'tendencia': self._generar_grafico_tendencia(),
+                'distribucion': self._generar_grafico_distribucion(),
+                'boxplot': self._generar_boxplot(),
+            },
+            'fecha_generacion': datetime.now(),
+        }
+
+    def _preparar_contexto_comparativo(self):
+        """Prepara contexto para comparación con otros indicadores"""
+        otros_indicadores = self.accion.indicadores.exclude(id=self.indicador.id)
+
+        comparaciones = []
+        for otro in otros_indicadores:
+            resultados_otro = otro.resultados.all()
+            if resultados_otro.exists():
+                statistics_calculator = StatisticsCalculatorService()
+                stats_otro = statistics_calculator.calculate_advanced_statistics(
+                    resultados_otro, otro
+                )
+
+                comparaciones.append({
+                    'nombre': otro.nombre,
+                    'ultimo_valor': resultados_otro.last().valor if resultados_otro.last() else 0,
+                    'promedio': stats_otro.get('promedio', 0),
+                    'num_mediciones': resultados_otro.count(),
+                })
+
+        return {
+            'indicador': self.indicador,
+            'accion': self.accion,
+            'comparaciones': comparaciones,
+            'grafico_comparativo': self._generar_grafico_comparativo(otros_indicadores),
+            'fecha_generacion': datetime.now(),
+        }
+
+    def _generar_grafico_tendencia(self):
+        """Genera gráfico de tendencia con matplotlib"""
+        if not self.resultados.exists():
+            return None
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        fechas = [r.fecha for r in self.resultados]
+        valores = [r.valor for r in self.resultados]
+
+        # Gráfico de línea
+        ax.plot(fechas, valores, marker='o', linewidth=2, markersize=8, color='#1B84FF')
+
+        # Regresión lineal
+        x_numeric = np.arange(len(fechas))
+        z = np.polyfit(x_numeric, valores, 1)
+        p = np.poly1d(z)
+        ax.plot(fechas, p(x_numeric), "--", linewidth=2, color='#10b981', alpha=0.7, label='Tendencia')
+
+        ax.set_xlabel('Fecha', fontsize=12)
+        ax.set_ylabel(f'{self.indicador.unidad_medida.nombre if self.indicador.unidad_medida else "Valor"}',
+                      fontsize=12)
+        ax.set_title(f'Tendencia - {self.indicador.nombre}', fontsize=14, fontweight='bold')
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        return self._fig_to_base64(fig)
+
+    def _generar_grafico_distribucion(self):
+        """Genera histograma de distribución"""
+        if self.resultados.count() < 5:
+            return None
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        valores = [r.valor for r in self.resultados]
+
+        ax.hist(valores, bins=10, color='#1B84FF', alpha=0.7, edgecolor='black')
+
+        # Líneas de cuartiles
+        q1, q2, q3 = np.percentile(valores, [25, 50, 75])
+        ax.axvline(q1, color='red', linestyle='--', linewidth=2, label=f'Q1: {q1:.2f}')
+        ax.axvline(q2, color='green', linestyle='--', linewidth=2, label=f'Mediana: {q2:.2f}')
+        ax.axvline(q3, color='orange', linestyle='--', linewidth=2, label=f'Q3: {q3:.2f}')
+
+        ax.set_xlabel(f'{self.indicador.unidad_medida.nombre if self.indicador.unidad_medida else "Valor"}',
+                      fontsize=12)
+        ax.set_ylabel('Frecuencia', fontsize=12)
+        ax.set_title(f'Distribución de Valores - {self.indicador.nombre}', fontsize=14, fontweight='bold')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+
+        return self._fig_to_base64(fig)
+
+    def _generar_boxplot(self):
+        """Genera gráfico de caja (boxplot)"""
+        if self.resultados.count() < 5:
+            return None
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+
+        valores = [r.valor for r in self.resultados]
+
+        bp = ax.boxplot([valores], vert=True, patch_artist=True)
+        bp['boxes'][0].set_facecolor('#1B84FF')
+        bp['boxes'][0].set_alpha(0.7)
+
+        ax.set_ylabel(f'{self.indicador.unidad_medida.nombre if self.indicador.unidad_medida else "Valor"}',
+                      fontsize=12)
+        ax.set_title(f'Análisis de Caja - {self.indicador.nombre}', fontsize=14, fontweight='bold')
+        ax.grid(True, alpha=0.3, axis='y')
+        plt.tight_layout()
+
+        return self._fig_to_base64(fig)
+
+    def _generar_grafico_meta(self):
+        """Genera gráfico de progreso hacia meta"""
+        if not self.indicador.meta_valor or not self.resultados.exists():
+            return None
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        fechas = [r.fecha for r in self.resultados]
+        valores = [r.valor for r in self.resultados]
+        meta = [self.indicador.meta_valor] * len(fechas)
+
+        ax.plot(fechas, valores, marker='o', linewidth=2, markersize=8, color='#1B84FF', label='Valor Real')
+        ax.plot(fechas, meta, '--', linewidth=2, color='#ef4444', label=f'Meta: {self.indicador.meta_valor}')
+
+        ax.fill_between(fechas, valores, meta, where=np.array(valores) >= np.array(meta),
+                        alpha=0.3, color='green', label='Sobre la meta')
+        ax.fill_between(fechas, valores, meta, where=np.array(valores) < np.array(meta),
+                        alpha=0.3, color='red', label='Bajo la meta')
+
+        ax.set_xlabel('Fecha', fontsize=12)
+        ax.set_ylabel(f'{self.indicador.unidad_medida.nombre if self.indicador.unidad_medida else "Valor"}',
+                      fontsize=12)
+        ax.set_title(f'Progreso hacia Meta - {self.indicador.nombre}', fontsize=14, fontweight='bold')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        return self._fig_to_base64(fig)
+
+    def _generar_grafico_comparativo(self, otros_indicadores):
+        """Genera gráfico comparativo con otros indicadores"""
+        if not otros_indicadores.exists():
+            return None
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        nombres = [self.indicador.nombre[:20]]
+        valores = [self.resultados.last().valor if self.resultados.last() else 0]
+
+        for otro in otros_indicadores[:5]:  # Máximo 5 para claridad
+            resultados_otro = otro.resultados.all()
+            if resultados_otro.exists():
+                nombres.append(otro.nombre[:20])
+                valores.append(resultados_otro.last().valor)
+
+        colors = ['#1B84FF'] + ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][:len(nombres) - 1]
+
+        bars = ax.bar(nombres, valores, color=colors, alpha=0.7, edgecolor='black')
+
+        # Añadir valores sobre las barras
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height,
+                    f'{height:.2f}',
+                    ha='center', va='bottom', fontsize=10, fontweight='bold')
+
+        ax.set_ylabel('Último Valor', fontsize=12)
+        ax.set_title('Comparación de Indicadores', fontsize=14, fontweight='bold')
+        ax.grid(True, alpha=0.3, axis='y')
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+
+        return self._fig_to_base64(fig)
+
+    def _fig_to_base64(self, fig):
+        """Convierte figura matplotlib a base64"""
+        buffer = BytesIO()
+        fig.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
+        buffer.seek(0)
+        image_base64 = base64.b64encode(buffer.getvalue()).decode()
+        plt.close(fig)
+        return f'data:image/png;base64,{image_base64}'
+
+    def _generar_pdf(self, html_string):
+        """Genera PDF desde HTML usando WeasyPrint"""
+        css = CSS(string='''
+            @page {
+                size: A4;
+                margin: 2cm;
+            }
+            body {
+                font-family: Arial, sans-serif;
+                font-size: 11pt;
+                line-height: 1.6;
+            }
+            h1 { color: #1B84FF; font-size: 24pt; }
+            h2 { color: #333; font-size: 18pt; margin-top: 20pt; }
+            h3 { color: #555; font-size: 14pt; }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 10pt 0;
+            }
+            th {
+                background-color: #1B84FF;
+                color: white;
+                padding: 8pt;
+                text-align: left;
+            }
+            td {
+                border: 1pt solid #ddd;
+                padding: 8pt;
+            }
+            .kpi-box {
+                background: #f0f0f0;
+                padding: 10pt;
+                margin: 10pt 0;
+                border-left: 4pt solid #1B84FF;
+            }
+            .insight {
+                background: #fff3cd;
+                padding: 10pt;
+                margin: 10pt 0;
+                border-left: 4pt solid #f59e0b;
+            }
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+        ''', font_config=self.font_config)
+
+        pdf_file = HTML(string=html_string).write_pdf(
+            stylesheets=[css],
+            font_config=self.font_config
+        )
+
+        return pdf_file

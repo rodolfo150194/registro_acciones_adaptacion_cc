@@ -19,7 +19,7 @@
                             <h2>Medir variable del indicador [{{ indicador.id }}]</h2>
                         </div>
 
-                        <h4>Fecha resultado anterior: [{{ indicador.ultima_medicion | date:"d-m-Y" }}]</h4>
+                        <h4>Fecha resultado anterior: [{{ indicador.ultima_medicion | date:"d-m-Y H:i" }}]</h4>
                         <h4>Frecuencia: [{{ indicador.frecuencia_medicion }}]</h4>
                         <h4>Resultado anterior: [{{ indicador.get_ultimo_valor }}]</h4>
                     </div>

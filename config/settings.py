@@ -129,7 +129,7 @@ TIME_ZONE = 'America/Mexico_City'
 
 USE_I18N = True
 
-USE_TZ = False
+USE_TZ = True
 
 
 STATIC_URL = '/static/'
@@ -172,5 +172,24 @@ LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale'),
 ]
 
+SCHEDULER_CONFIG = {
+    'apscheduler.jobstores.default': {
+        'type': 'sqlalchemy',
+        'url': f'sqlite:///{BASE_DIR}/db.sqlite3'  # O tu base de datos
+    },
+    'apscheduler.executors.default': {
+        'class': 'apscheduler.executors.pool:ThreadPoolExecutor',
+        'max_workers': '10'
+    },
+    'apscheduler.job_defaults.coalesce': 'true',
+    'apscheduler.job_defaults.max_instances': '1',
+    'apscheduler.job_defaults.misfire_grace_time': '3600',  # 1 hora
+}
+NOTIFICACIONES_CONFIG = {
+    'dias_previos_notificacion': 1,  # Días antes de enviar notificación previa
+    'habilitar_notificaciones_previas': True,
+    'habilitar_notificaciones_urgentes': True,
+    'max_reintentos_notificacion': 3,
+}
 
 GEMINI_API_KEY = config('GEMINI_API_KEY')

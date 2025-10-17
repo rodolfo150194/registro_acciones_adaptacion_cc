@@ -70,6 +70,7 @@ class Entidad(NomencladorAbstract):
 class Sector(NomencladorAbstract):
     history = AuditlogHistoryField()
 
+
     def __str__(self):
         return self.nombre
 

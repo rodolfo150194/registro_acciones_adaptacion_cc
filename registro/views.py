@@ -3,7 +3,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
-
+from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -11,8 +11,9 @@ from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, models, transaction
 from django.db.models import Q, Sum
 from django.forms import modelformset_factory, formset_factory
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.urls import reverse
 from django.utils import timezone
@@ -20,12 +21,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DetailView, DeleteView, FormView
 from sympy import sympify, Symbol
+from weasyprint import CSS, HTML
+from weasyprint.text.fonts import FontConfiguration
 
 from nomencladores.models import EstadoAccion, TipoAccion, TipoMoneda, TipoPresupuesto, EstadoPresupuesto, \
     TipoIndicador, Escenario, Sector
 from registro.services import FormulaCalculatorService, ResultadoIndicadorService, VariationCalculatorService, \
     ChartDataService, BreadcrumbBuilder, StatisticsCalculatorService, \
-    InsightGeneratorService, RankingCalculatorService, MetaProgressService
+    InsightGeneratorService, RankingCalculatorService, MetaProgressService, PresupuestoAnalyticsService, \
+    PresupuestoForecastService, PresupuestoVisualizationService, PresupuestoBenchmarkService, \
+    PresupuestoIndicadorAnalyzer, ReportePDFService
 from registro.forms import DocumentoForm, AccionForm, PresupuestoPlanificadoForm, PresupuestoEjecutadoForm, \
     IndicadorForm, VariableIndicadorForm, ResultadoVariableForm, ResultadoIndicadorForm
 from registro.models import Accion, Documento, PresupuestoPlanificado, PresupuestoEjecutado, VariableIndicador, \
@@ -324,7 +329,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context['sectores_data'] = sectores_data
 
         # ============ PRÓXIMOS VENCIMIENTOS ============
-        hoy = timezone.now().date()
+        hoy = timezone.now()
         proximos_30_dias = hoy + datetime.timedelta(days=30)
 
         metas_proximas = []
@@ -357,8 +362,8 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
         # ============ METADATA ============
         context.update({
-            'title_html': 'Dashboard Ejecutivo',
-            'title_head': 'Panel de Control Ejecutivo',
+            'title_html': 'Resumen',
+            'title_head': 'Panel de Control',
             'ultima_actualizacion': timezone.now()
         })
 
@@ -1605,8 +1610,6 @@ class ResultadosIndicadorListView(LoginRequiredMixin, PermissionRequiredMixin,
         chart_data = self.chart_data_service.prepare_chart_data(object_list, self.indicador)
         # Nuevos cálculos estadísticos
         advanced_stats = self.statistics_calculator.calculate_advanced_statistics(object_list, self.indicador)
-        # projection = self.projection_service.calculate_projection(object_list)
-        # insights = self.insight_generator.generate_insights(object_list, advanced_stats, variations, self.indicador)
         insights = self.insight_generator.generate_insights(object_list, advanced_stats, variations, self.indicador)
 
         # Cálculo de progreso hacia meta (si existe)
@@ -1632,6 +1635,19 @@ class ResultadosIndicadorListView(LoginRequiredMixin, PermissionRequiredMixin,
             object_list, advanced_stats, variations, self.indicador
         )
 
+        # ============ NUEVOS GRÁFICOS MEJORADOS ============
+        # 1. Gráfico de Tendencia con Regresión Lineal
+        trend_regression_chart = self._prepare_trend_regression_chart(object_list)
+
+        # 2. Gráfico de Cumplimiento de Meta vs Tiempo
+        goal_timeline_chart = self._prepare_goal_timeline_chart(object_list)
+
+        # 3. Gráfico de Comparación con otros indicadores de la acción
+        comparison_chart = self._prepare_comparison_chart()
+
+        # Obtener lista de indicadores de la misma acción para comparación
+        indicadores_accion = self.accion.indicadores.exclude(id=self.indicador.id)
+
         context.update({
             'title_html': 'Resultados del indicador',
             'title_head': f'Resultados del indicador [{self.indicador.id}]',
@@ -1652,17 +1668,412 @@ class ResultadosIndicadorListView(LoginRequiredMixin, PermissionRequiredMixin,
             'executive_summary': executive_summary,
             'climate_impact_score': climate_impact_score,
             'advanced_statistics': advanced_stats,
-
-            # 'projection': projection,
             'meta_progress': meta_progress,
             'detailed_meta_progress': detailed_meta_progress,
             'next_measurement': next_measurement,
             'performance_level': self._get_performance_level(variations, advanced_stats),
             'performance_ranking': performance_ranking,
+            # Nuevos gráficos
+            'trend_regression_chart': json.dumps(trend_regression_chart),
+            'goal_timeline_chart': json.dumps(goal_timeline_chart),
+            'comparison_chart': json.dumps(comparison_chart),
+            'indicadores_accion': indicadores_accion,
             **variations
         })
 
         return context
+
+    def _prepare_trend_regression_chart(self, object_list):
+        """Gráfico de tendencia con línea de regresión y proyección"""
+        if object_list.count() < 3:
+            return None
+
+        import numpy as np
+        from datetime import timedelta
+
+        # Datos reales
+        fechas = []
+        valores = []
+        labels = []
+
+        for idx, resultado in enumerate(object_list):
+            fechas.append(idx)
+            valores.append(round(float(resultado.valor),2))
+            labels.append(resultado.fecha.strftime("%d-%m-%Y"))
+
+        # Calcular regresión lineal
+        x = np.array(fechas)
+        y = np.array(valores)
+
+        # Regresión lineal: y = mx + b
+        m, b = np.polyfit(x, y, 1)
+
+        # Línea de tendencia
+        trend_line = [round(float(m * xi + b),2) for xi in x]
+
+        # Proyección (próximos 3 puntos)
+        future_x = list(range(len(x), len(x) + 3))
+        future_trend = [round(float(m * xi + b),2) for xi in future_x]
+
+        # Preparar etiquetas para proyección
+        last_date = object_list.last().fecha
+        future_labels = []
+        for i in range(1, 4):
+            future_date = last_date + timedelta(days=30 * i)
+            future_labels.append(future_date.strftime("%d-%m-%Y"))
+
+        # Calcular banda de confianza (±1 desviación estándar)
+        residuals = y - np.array(trend_line)
+        std_dev = round(float(np.std(residuals)),2)
+
+        upper_band = [round(float(val + std_dev),2) for val in trend_line]
+        lower_band = [round(float(val - std_dev),2) for val in trend_line]
+
+        # IMPORTANTE: Convertir m y b a float nativo para el subtitle
+        m_float = float(m)
+        b_float = float(b)
+        r_squared = float(self._calculate_r_squared(y, trend_line))
+
+        chart_config = {
+            'series': [
+                {
+                    'name': 'Valores Reales',
+                    'type': 'scatter',
+                    'data': valores
+                },
+                {
+                    'name': 'Línea de Tendencia',
+                    'type': 'line',
+                    'data': trend_line
+                },
+                {
+                    'name': 'Proyección',
+                    'type': 'line',
+                    'data': [None] * (len(valores) - 1) + [valores[-1]] + future_trend
+                },
+                {
+                    'name': 'Banda Superior',
+                    'type': 'line',
+                    'data': upper_band
+                },
+                {
+                    'name': 'Banda Inferior',
+                    'type': 'line',
+                    'data': lower_band
+                }
+            ],
+            'chart': {
+                'height': 400,
+                'type': 'line',
+                'toolbar': {'show': 'true'},
+                'zoom': {'enabled': 'true'}
+            },
+            'title': {
+                'text': '',
+                'style': {
+                    'fontSize': '18px',
+                    'fontWeight': 'bold',
+                    'fontFamily': 'Inter, sans-serif'
+                }
+            },
+            'colors': ['#1B84FF', '#10b981', '#f59e0b', '#e0e0e0', '#e0e0e0'],
+            'stroke': {
+                'width': [0, 3, 3, 1, 1],
+                'curve': ['smooth', 'straight', 'straight', 'smooth', 'smooth'],
+                'dashArray': [0, 0, 5, 3, 3]
+            },
+            'markers': {
+                'size': [8, 0, 0, 0, 0],
+                'hover': {'size': [10, 0, 0, 0, 0]}
+            },
+            'fill': {
+                'type': ['solid', 'solid', 'solid', 'solid', 'solid'],
+                'opacity': [1, 1, 1, 0.1, 0.1]
+            },
+            'xaxis': {
+                'categories': labels + future_labels,
+                'labels': {
+                    'rotate': -45,
+                    'style': {'fontSize': '11px'}
+                }
+            },
+            'yaxis': {
+                'title': {
+                    'text': self.indicador.unidad_medida.nombre if self.indicador.unidad_medida else 'Valor'
+                }
+            },
+            'legend': {
+                'position': 'top',
+                'horizontalAlign': 'center'
+            },
+            'annotations': {
+                'xaxis': [{
+                    'x': len(labels) - 0.5,
+                    'borderColor': '#999',
+                    'strokeDashArray': 5,
+                    'label': {
+                        'text': 'Proyección →',
+                        'style': {
+                            'color': '#fff',
+                            'background': '#f59e0b'
+                        }
+                    }
+                }]
+            }
+        }
+
+        # Agregar información de tendencia
+        chart_config['subtitle'] = {
+            'text': f'Tendencia: {"Creciente" if m > 0 else "Decreciente"} | Pendiente: {m:.4f} | R²: {self._calculate_r_squared(y, trend_line):.3f}',
+            'style': {'fontSize': '12px', 'color': '#666'}
+        }
+
+        return chart_config
+
+    def _prepare_goal_timeline_chart(self, object_list):
+        """Gráfico de progreso hacia meta con timeline"""
+        if not self.indicador.meta_valor or object_list.count() < 2:
+            return None
+
+        # Datos para el gráfico
+        fechas = []
+        valores = []
+        progreso_porcentaje = []
+        meta = round(self.indicador.meta_valor,2)
+        baseline = round(self.indicador.valor_baseline or 0,2)
+
+        for resultado in object_list:
+            fechas.append(resultado.fecha.strftime("%d-%m-%Y"))
+            valores.append(float(resultado.valor))
+
+            # Calcular progreso según dirección
+            if self.indicador.direccion_optima == 'incremento':
+                if meta > baseline:
+                    progreso = round(((resultado.valor - baseline) / (meta - baseline)) * 100,2)
+                else:
+                    progreso = 0
+            else:  # decremento
+                if baseline > meta:
+                    progreso = round(((baseline - resultado.valor) / (baseline - meta)) * 100,2)
+                else:
+                    progreso = 0
+
+            progreso_porcentaje.append(min(100, max(0, progreso)))
+
+        # Determinar colores según progreso
+        colors = []
+        for prog in progreso_porcentaje:
+            if prog >= 80:
+                colors.append('#10b981')  # Verde
+            elif prog >= 50:
+                colors.append('#f59e0b')  # Amarillo
+            else:
+                colors.append('#ef4444')  # Rojo
+
+        chart_config = {
+            'series': [
+                {
+                    'name': 'Valor Actual',
+                    'type': 'line',
+                    'data': valores
+                },
+                {
+                    'name': '% Progreso Meta',
+                    'type': 'bar',
+                    'data': progreso_porcentaje
+                }
+            ],
+            'chart': {
+                'height': 400,
+                'type': 'line',
+                'toolbar': {'show': 'true'}
+            },
+            'title': {
+                'text': 'Evolución hacia la Meta Climática',
+                'style': {
+                    'fontSize': '18px',
+                    'fontWeight': 'bold',
+                    'fontFamily': 'Inter, sans-serif'
+                }
+            },
+            'colors': ['#1B84FF', '#10b981'],
+            'stroke': {
+                'width': [3, 0],
+                'curve': 'smooth'
+            },
+            'plotOptions': {
+                'bar': {
+                    'columnWidth': '50%',
+                    'borderRadius': 4,
+                    'distributed': 'false'
+                }
+            },
+            'dataLabels': {
+                'enabled': 'true',
+                'enabledOnSeries': [1],
+            },
+            'xaxis': {
+                'categories': fechas,
+                'labels': {
+                    'rotate': -45,
+                    'style': {'fontSize': '11px'}
+                }
+            },
+            'yaxis': [
+                {
+                    'title': {
+                        'text': self.indicador.unidad_medida.nombre if self.indicador.unidad_medida else 'Valor'
+                    },
+                },
+                {
+                    'opposite': 'true',
+                    'title': {
+                        'text': '% Progreso'
+                    },
+                    'min': 0,
+                    'max': 100,
+                }
+            ],
+            'legend': {
+                'position': 'top',
+                'horizontalAlign': 'center'
+            },
+            'annotations': {
+                'yaxis': [{
+                    'y': meta,
+                    'y2': None,
+                    'borderColor': '#ef4444',
+                    'strokeDashArray': 5,
+                    'label': {
+                        'text': f'Meta: {meta}',
+                        'style': {
+                            'color': '#fff',
+                            'background': '#ef4444'
+                        }
+                    }
+                }]
+            }
+        }
+
+        return chart_config
+
+    def _prepare_comparison_chart(self):
+        """Gráfico comparativo con otros indicadores de la misma acción"""
+        # Obtener indicadores de la misma acción
+        indicadores_accion = self.accion.indicadores.all()
+
+        if indicadores_accion.count() < 2:
+            return None
+
+        series_data = []
+
+        for indicador in indicadores_accion:
+            resultados = indicador.resultados.all().order_by('fecha')
+
+            if resultados.count() < 2:
+                continue
+
+            # Normalizar valores para comparación (0-100)
+            valores = [float(r.valor) for r in resultados]
+            min_val = min(valores)
+            max_val = max(valores)
+
+            if max_val - min_val > 0:
+                valores_normalizados = [
+                    round(((val - min_val) / (max_val - min_val)) * 100,2)
+                    for val in valores
+                ]
+            else:
+                valores_normalizados = [50] * len(valores)
+
+            # Tomar solo las últimas 10 mediciones para claridad
+            if len(valores_normalizados) > 10:
+                valores_normalizados = valores_normalizados[-10:]
+
+            series_data.append({
+                'name': indicador.nombre[:30] + '...' if len(indicador.nombre) > 30 else indicador.nombre,
+                'data': valores_normalizados,
+                'id': indicador.id
+            })
+
+        if not series_data:
+            return None
+
+        # Crear categorías genéricas
+        max_length = max(len(s['data']) for s in series_data)
+        categories = [f'M-{i + 1}' for i in range(max_length)]
+
+        chart_config = {
+            'series': series_data,
+            'chart': {
+                'height': 400,
+                'type': 'radar',
+                'toolbar': {'show': 'true'},
+                'dropShadow': {
+                    'enabled': 'true',
+                    'blur': 1,
+                    'left': 1,
+                    'top': 1
+                }
+            },
+            'title': {
+                'text': f'Comparación de Indicadores - {self.accion.nombre}',
+                'style': {
+                    'fontSize': '18px',
+                    'fontWeight': 'bold',
+                    'fontFamily': 'Inter, sans-serif'
+                }
+            },
+            'colors': ['#1B84FF', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'],
+            'stroke': {
+                'width': 2
+            },
+            'fill': {
+                'opacity': 0.2
+            },
+            'markers': {
+                'size': 4,
+                'hover': {
+                    'size': 6
+                }
+            },
+            'xaxis': {
+                'categories': categories
+            },
+            'yaxis': {
+                'show': 'true',
+                'min': 0,
+                'max': 100,
+                'tickAmount': 5
+            },
+            'legend': {
+                'position': 'bottom',
+                'horizontalAlign': 'center',
+                'fontSize': '12px'
+            },
+            'tooltip': {
+                'y': {
+                    'formatter': "function(val) { return val.toFixed(1) + ' (normalizado)' }"
+                }
+            }
+        }
+
+        return chart_config
+
+
+    def _calculate_r_squared(self, y_actual, y_predicted):
+        """Calcula el coeficiente de determinación R²"""
+        import numpy as np
+        y_actual = np.array(y_actual)
+        y_predicted = np.array(y_predicted)
+
+        ss_res = np.sum((y_actual - y_predicted) ** 2)
+        ss_tot = np.sum((y_actual - np.mean(y_actual)) ** 2)
+
+        r_squared = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
+
+        # CONVERTIR A FLOAT NATIVO
+        return float(r_squared)
 
     def _calculate_meta_progress(self, object_list):
         """Calcula el progreso hacia la meta si existe"""
@@ -1688,9 +2099,14 @@ class ResultadosIndicadorListView(LoginRequiredMixin, PermissionRequiredMixin,
 
     def _calculate_next_measurement(self):
         """Calcula cuándo debe ser la próxima medición"""
-        proxima_fecha = self.indicador.calcular_proxima_medicion()
+        proxima_fecha = self.indicador.calcular_proxima_medicion().astimezone(timezone.get_current_timezone())
+        if not proxima_fecha:
+            return None
+
+        hoy = timezone.now().astimezone(timezone.get_current_timezone())
         if proxima_fecha:
-            dias_restantes = (proxima_fecha - datetime.datetime.today()).days
+            diferencia = proxima_fecha - hoy
+            dias_restantes = diferencia.days
             return {
                 'fecha': proxima_fecha,
                 'dias_restantes': dias_restantes,
@@ -1818,8 +2234,7 @@ class ResultadoIndicadorCreateView(LoginRequiredMixin, PermissionRequiredMixin,
         except Exception as e:
             messages.error(
                 self.request,
-                'Verifica que las variables que sean denominador en una división no tengan valor 0 '
-                'o que la operación no resulte en 0.'
+                'Error: [' + str(e) + ']'
             )
             return self.form_invalid(form, formset_variables=formset_variables)
 
@@ -1904,7 +2319,7 @@ class ResultadoIndicadorUpdateView(LoginRequiredMixin, PermissionRequiredMixin,
         try:
             with transaction.atomic():
                 # Actualizar el objeto resultado
-                resultado_obj = form.save()
+                resultado_obj = form.save(commit=False)
 
                 # Usar el servicio para actualizar y recalcular
                 self.resultado_service.save_resultado_with_calculation(
@@ -1917,7 +2332,7 @@ class ResultadoIndicadorUpdateView(LoginRequiredMixin, PermissionRequiredMixin,
         except Exception as e:
             messages.error(
                 self.request,
-                'Error: [' + e + ']'
+                'Error: [' + str(e) + ']'
             )
             return self.form_invalid(form, formset_variables=formset_variables)
 
@@ -1938,7 +2353,7 @@ def eliminar_resultado_indicador(request, id_accion, id_indicador, id_resultado)
         indicador.delete()
         messages.success(request, 'El resultado se ha eliminado correctamente')
         return HttpResponseRedirect(
-            reverse('resgistro:lista_resultado_indicador', args=[id_accion, id_indicador]))
+            reverse('registro:lista_resultado_indicador', args=[id_accion, id_indicador]))
 
 
 def mapa_cuba_leaflet(request):
@@ -2070,3 +2485,599 @@ def municipios_por_tipo_accion(request):
     else:
         return JsonResponse({'tipo': 'vacio', 'data': [],
                              'resumen': {'total_acciones': 0, 'total_activas': 0, 'presupuesto_total': []}}, safe=False)
+
+
+@csrf_exempt
+@login_required
+@permission_required('registro.view_indicador', raise_exception=True)
+def comparar_indicadores_accion(request, id_accion):
+    """Vista para comparación dinámica de indicadores"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    try:
+        import json
+        data = json.loads(request.body)
+        indicadores_ids = data.get('indicadores', [])
+
+        if not indicadores_ids:
+            return JsonResponse({'success': False, 'error': 'No se seleccionaron indicadores'})
+
+        accion = get_object_or_404(Accion, id=id_accion)
+
+        # Verificar que los indicadores pertenecen a la acción
+        indicadores = accion.indicadores.filter(id__in=indicadores_ids)
+
+        if not indicadores.exists():
+            return JsonResponse({'success': False, 'error': 'Indicadores no encontrados'})
+
+        # Preparar datos para el gráfico
+        series_data = []
+
+        for indicador in indicadores:
+            resultados = indicador.resultados.all().order_by('fecha')
+
+            if resultados.count() < 2:
+                continue
+
+            # Normalizar valores (0-100)
+            valores = [float(r.valor) for r in resultados]
+            min_val = min(valores)
+            max_val = max(valores)
+
+            if max_val - min_val > 0:
+                valores_normalizados = [
+                    ((val - min_val) / (max_val - min_val)) * 100
+                    for val in valores
+                ]
+            else:
+                valores_normalizados = [50] * len(valores)
+
+            # Limitar a últimas 10 mediciones
+            if len(valores_normalizados) > 10:
+                valores_normalizados = valores_normalizados[-10:]
+
+            series_data.append({
+                'name': indicador.nombre[:30] + '...' if len(indicador.nombre) > 30 else indicador.nombre,
+                'data': valores_normalizados,
+                'id': indicador.id
+            })
+
+        return JsonResponse({
+            'success': True,
+            'series': series_data,
+            'total': len(series_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@permission_required('registro.view_indicador', raise_exception=True)
+def exportar_indicador_excel(request, id_accion, id_indicador):
+    """Exporta los datos del indicador a Excel"""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from django.http import HttpResponse
+    from datetime import datetime
+
+    indicador = get_object_or_404(Indicador, id=id_indicador)
+    accion = get_object_or_404(Accion, id=id_accion)
+    resultados = indicador.resultados.all().order_by('fecha')
+
+    # Crear workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Resultados Indicador"
+
+    # Estilos
+    header_fill = PatternFill(start_color="1B84FF", end_color="1B84FF", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True, size=12)
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # Información del indicador
+    ws['A1'] = 'REPORTE DE INDICADOR CLIMÁTICO'
+    ws['A1'].font = Font(bold=True, size=16)
+    ws.merge_cells('A1:F1')
+
+    ws['A3'] = 'Acción:'
+    ws['B3'] = accion.nombre
+    ws['A4'] = 'Indicador:'
+    ws['B4'] = indicador.nombre
+    ws['A5'] = 'Tipo:'
+    ws['B5'] = indicador.tipo_indicador.nombre
+    ws['A6'] = 'Unidad de Medida:'
+    ws['B6'] = indicador.unidad_medida.nombre if indicador.unidad_medida else 'N/A'
+    ws['A7'] = 'Fecha de Generación:'
+    ws['B7'] = datetime.now().strftime('%d/%m/%Y %H:%M')
+
+    # Hacer negrita las etiquetas
+    for row in range(3, 8):
+        ws[f'A{row}'].font = Font(bold=True)
+
+    # Encabezados de datos
+    start_row = 9
+    headers = ['Fecha', 'Valor', 'Fuente', 'Observación']
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=start_row, column=col)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+
+    # Datos
+    for idx, resultado in enumerate(resultados, start=start_row + 1):
+        ws.cell(row=idx, column=1).value = resultado.fecha.strftime('%d/%m/%Y')
+        ws.cell(row=idx, column=2).value = resultado.valor
+        ws.cell(row=idx, column=3).value = resultado.fuente_dato or 'N/A'
+        ws.cell(row=idx, column=4).value = resultado.observacion or 'N/A'
+
+        # Aplicar bordes
+        for col in range(1, 5):
+            ws.cell(row=idx, column=col).border = border
+
+    # Estadísticas
+    stats_row = len(resultados) + start_row + 2
+    ws[f'A{stats_row}'] = 'ESTADÍSTICAS'
+    ws[f'A{stats_row}'].font = Font(bold=True, size=14)
+    ws.merge_cells(f'A{stats_row}:D{stats_row}')
+
+    stats_row += 2
+
+    if resultados.exists():
+        valores = [r.valor for r in resultados]
+
+        stats = [
+            ('Valor Promedio:', sum(valores) / len(valores)),
+            ('Valor Máximo:', max(valores)),
+            ('Valor Mínimo:', min(valores)),
+            ('Total Mediciones:', len(valores)),
+            ('Primera Medición:', resultados.first().fecha.strftime('%d/%m/%Y')),
+            ('Última Medición:', resultados.last().fecha.strftime('%d/%m/%Y')),
+        ]
+
+        if indicador.meta_valor:
+            progreso = indicador.calcular_progreso_meta()
+            if progreso:
+                stats.append(('Meta:', indicador.meta_valor))
+                stats.append(('Progreso hacia Meta:', f"{progreso['progreso_porcentaje']:.1f}%"))
+
+        for idx, (label, value) in enumerate(stats):
+            ws[f'A{stats_row + idx}'] = label
+            ws[f'A{stats_row + idx}'].font = Font(bold=True)
+            ws[f'B{stats_row + idx}'] = value
+
+    # Ajustar anchos de columna
+    ws.column_dimensions['A'].width = 20
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 25
+    ws.column_dimensions['D'].width = 40
+
+    # Preparar respuesta
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f'indicador_{indicador.id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    wb.save(response)
+    return response
+
+
+class PresupuestoAnalyticsView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    """Vista para análisis presupuestario avanzado"""
+    template_name = 'presupuesto/dashboard.html'
+    permission_required = 'registro.view_presupuestoplanificado'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        accion = get_object_or_404(Accion, id=self.kwargs['id_accion'])
+
+        # Servicios
+        analytics_service = PresupuestoAnalyticsService()
+        forecast_service = PresupuestoForecastService()
+        viz_service = PresupuestoVisualizationService()
+        benchmark_service = PresupuestoBenchmarkService()
+        indicador_analyzer = PresupuestoIndicadorAnalyzer()
+
+        # Cálculos principales
+        budget_health_score = analytics_service.calculate_budget_health_score(accion)
+        alertas = analytics_service.detect_budget_anomalies(accion)
+        resumen_ejecutivo = analytics_service.calculate_execution_summary(accion)
+        proyeccion = forecast_service.forecast_budget_completion(accion)
+        recomendaciones = forecast_service.recommend_budget_adjustments(accion)
+
+        # Datos para gráficos
+        waterfall_data = viz_service.generate_waterfall_data(accion)
+        category_data = viz_service.generate_category_chart_data(accion)
+        burn_rate_data = viz_service.generate_burn_rate_data(accion)
+
+        # Benchmarking
+        benchmarking = benchmark_service.compare_budget_efficiency(accion)
+
+        # Costo-efectividad
+        costo_efectividad = indicador_analyzer.calculate_cost_effectiveness(accion)
+
+        # Breadcrumbs
+        breadcrumbs = [
+            {'name': 'Inicio', 'url': reverse('registro:home'), 'icon': 'ki-home'},
+            {'name': 'Acciones', 'url': reverse('registro:lista_accion'), 'icon': None},
+            {'name': 'Presupuesto', 'url': reverse('registro:lista_presupuesto_planificado', args=[accion.id]),
+             'icon': None},
+            {'name': 'Analytics', 'url': None, 'icon': None, 'active': True},
+        ]
+
+        context.update({
+            'title_html': 'Análisis Presupuestario Avanzado',
+            'title_head': f'Analytics - Acción [{accion.id}]',
+            'accion': accion,
+            'budget_health_score': budget_health_score,
+            'alertas_presupuestarias': alertas,
+            'resumen_ejecutivo': resumen_ejecutivo,
+            'proyeccion_finalizacion': proyeccion,
+            'recomendaciones': recomendaciones,
+            'waterfall_data': waterfall_data,
+            'category_data': category_data,
+            'burn_rate_data': burn_rate_data,
+            'benchmarking': benchmarking,
+            'costo_efectividad': costo_efectividad,
+            'presupuestos_planificados': accion.presupuestos_planificados.all(),
+            'tipos_moneda': TipoMoneda.objects.filter(estado=True),
+            'crear_url': reverse('registro:registrar_presupuesto_planificado', args=[accion.id]),
+            'breadcrumbs': breadcrumbs,
+            'show_menu_left': True,
+            'current_step': 2
+        })
+
+        return context
+
+
+@login_required
+@require_GET
+def burn_rate_data_ajax(request, id_accion):
+    """Endpoint AJAX para datos de burn rate por moneda"""
+    accion = get_object_or_404(Accion, id=id_accion)
+    moneda_id = request.GET.get('moneda_id')
+
+    moneda = None
+    if moneda_id:
+        moneda = get_object_or_404(TipoMoneda, id=moneda_id)
+
+    viz_service = PresupuestoVisualizationService()
+    data = viz_service.generate_burn_rate_data(accion, moneda)
+
+    return JsonResponse(data)
+
+
+@login_required
+@permission_required('registro.view_presupuestoplanificado')
+def exportar_reporte_presupuesto(request, id_accion):
+    """Exporta reporte presupuestario en diferentes formatos"""
+    import json
+    from django.http import HttpResponse
+    from io import BytesIO
+
+    accion = get_object_or_404(Accion, id=id_accion)
+    formato = request.GET.get('formato', 'pdf')
+    opciones_json = request.GET.get('opciones', '{}')
+    opciones = json.loads(opciones_json)
+
+    # Servicios
+    analytics_service = PresupuestoAnalyticsService()
+    forecast_service = PresupuestoForecastService()
+
+    # Recopilar datos
+    datos_reporte = {
+        'accion': accion,
+        'fecha_generacion': timezone.now(),
+        'usuario': request.user
+    }
+
+    if opciones.get('resumen'):
+        datos_reporte['resumen'] = analytics_service.calculate_execution_summary(accion)
+        datos_reporte['health_score'] = analytics_service.calculate_budget_health_score(accion)
+
+    if opciones.get('alertas'):
+        datos_reporte['alertas'] = analytics_service.detect_budget_anomalies(accion)
+
+    if opciones.get('proyecciones'):
+        datos_reporte['proyecciones'] = forecast_service.forecast_budget_completion(accion)
+        datos_reporte['recomendaciones'] = forecast_service.recommend_budget_adjustments(accion)
+
+    if formato == 'pdf':
+        # Generar PDF
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        # Título
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor('#1B84FF'),
+            spaceAfter=30,
+        )
+        elements.append(Paragraph(f"Reporte Presupuestario - {accion.nombre}", title_style))
+        elements.append(Spacer(1, 0.2 * inch))
+
+        # Resumen Ejecutivo
+        if opciones.get('resumen'):
+            elements.append(Paragraph("Resumen Ejecutivo", styles['Heading2']))
+            elements.append(Spacer(1, 0.1 * inch))
+
+            resumen_data = [
+                ['Métrica', 'Valor']
+            ]
+
+            for item in datos_reporte['resumen']['total_planificado']:
+                resumen_data.append([
+                    f"Total Planificado ({item['moneda']})",
+                    f"{item['moneda_simbolo']}{item['monto_total']:,.2f}"
+                ])
+
+            for item in datos_reporte['resumen']['total_ejecutado']:
+                resumen_data.append([
+                    f"Total Ejecutado ({item['moneda']})",
+                    f"{item['moneda_simbolo']}{item['monto_total']:,.2f} ({item['porcentaje']:.1f}%)"
+                ])
+
+            resumen_data.append([
+                'Score de Salud',
+                f"{datos_reporte['health_score']}/100"
+            ])
+
+            resumen_table = Table(resumen_data, colWidths=[3 * inch, 2 * inch])
+            resumen_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1B84FF')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            elements.append(resumen_table)
+            elements.append(Spacer(1, 0.3 * inch))
+
+        # Alertas
+        if opciones.get('alertas') and datos_reporte.get('alertas'):
+            elements.append(Paragraph("Alertas y Notificaciones", styles['Heading2']))
+            elements.append(Spacer(1, 0.1 * inch))
+
+            for alerta in datos_reporte['alertas']:
+                alerta_text = f"<b>{alerta['titulo']}</b><br/>{alerta['mensaje']}"
+                elements.append(Paragraph(alerta_text, styles['Normal']))
+                elements.append(Spacer(1, 0.1 * inch))
+
+            elements.append(Spacer(1, 0.2 * inch))
+
+        # Proyecciones
+        if opciones.get('proyecciones') and datos_reporte.get('proyecciones'):
+            elements.append(Paragraph("Proyecciones", styles['Heading2']))
+            proyeccion = datos_reporte['proyecciones']
+
+            proj_text = f"""
+            Fecha estimada de finalización: <b>{proyeccion['fecha_estimada'].strftime('%d/%m/%Y')}</b><br/>
+            Meses estimados: <b>{proyeccion['meses_estimados']}</b><br/>
+            Tendencia: <b>{proyeccion['tendencia'].title()}</b>
+            """
+            elements.append(Paragraph(proj_text, styles['Normal']))
+            elements.append(Spacer(1, 0.3 * inch))
+
+        # Construir PDF
+        doc.build(elements)
+        buffer.seek(0)
+
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="reporte_presupuesto_accion_{accion.id}.pdf"'
+        return response
+
+    elif formato == 'excel':
+        # Generar Excel
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, PatternFill
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Reporte Presupuestario"
+
+        # Encabezado
+        ws['A1'] = f"Reporte Presupuestario - {accion.nombre}"
+        ws['A1'].font = Font(size=16, bold=True, color="1B84FF")
+        ws.merge_cells('A1:D1')
+
+        row = 3
+
+        # Resumen
+        if opciones.get('resumen'):
+            ws[f'A{row}'] = "Resumen Ejecutivo"
+            ws[f'A{row}'].font = Font(size=14, bold=True)
+            row += 1
+
+            ws[f'A{row}'] = "Métrica"
+            ws[f'B{row}'] = "Valor"
+            ws[f'A{row}'].font = Font(bold=True)
+            ws[f'B{row}'].font = Font(bold=True)
+            row += 1
+
+            for item in datos_reporte['resumen']['total_planificado']:
+                ws[f'A{row}'] = f"Total Planificado ({item['moneda']})"
+                ws[f'B{row}'] = item['monto_total']
+                ws[f'B{row}'].number_format = '"$"#,##0.00'
+                row += 1
+
+            row += 2
+
+        # Presupuestos detallados
+        if opciones.get('detalle'):
+            ws[f'A{row}'] = "Detalle de Presupuestos"
+            ws[f'A{row}'].font = Font(size=14, bold=True)
+            row += 1
+
+            headers = ['Tipo', 'Fuente', 'Planificado', 'Ejecutado', '% Ejecución', 'Restante']
+            for col, header in enumerate(headers, start=1):
+                cell = ws.cell(row=row, column=col, value=header)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="1B84FF", end_color="1B84FF", fill_type="solid")
+            row += 1
+
+            for pp in accion.presupuestos_planificados.all():
+                ws[f'A{row}'] = pp.tipo_presupuesto.nombre
+                ws[f'B{row}'] = pp.fuente_financiamiento
+                ws[f'C{row}'] = pp.monto
+                ws[f'D{row}'] = pp.get_monto_total_ejecutado
+                ws[f'E{row}'] = pp.get_porcentaje_monto_ejecutado / 100
+                ws[f'F{row}'] = pp.get_monto_restante
+
+                ws[f'C{row}'].number_format = '"$"#,##0.00'
+                ws[f'D{row}'].number_format = '"$"#,##0.00'
+                ws[f'E{row}'].number_format = '0.00%'
+                ws[f'F{row}'].number_format = '"$"#,##0.00'
+
+                row += 1
+
+        # Guardar
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = HttpResponse(
+            buffer,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="reporte_presupuesto_accion_{accion.id}.xlsx"'
+        return response
+
+    elif formato == 'csv':
+        # Generar CSV
+        import csv
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="reporte_presupuesto_accion_{accion.id}.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(['Tipo', 'Fuente', 'Moneda', 'Planificado', 'Ejecutado', 'Porcentaje', 'Restante'])
+
+        for pp in accion.presupuestos_planificados.all():
+            writer.writerow([
+                pp.tipo_presupuesto.nombre,
+                pp.fuente_financiamiento,
+                pp.tipo_moneda.nombre,
+                pp.monto,
+                pp.get_monto_total_ejecutado,
+                f"{pp.get_porcentaje_monto_ejecutado:.2f}%",
+                pp.get_monto_restante
+            ])
+
+        return response
+
+    return HttpResponse("Formato no soportado", status=400)
+
+
+@login_required
+@permission_required('registro.view_indicador', raise_exception=True)
+def generar_reporte_pdf(request, id_accion, id_indicador, tipo_reporte):
+    """Vista para generar diferentes tipos de reportes PDF"""
+
+    indicador = get_object_or_404(Indicador, id=id_indicador)
+    accion = get_object_or_404(Accion, id=id_accion)
+
+    # Crear servicio de reportes
+    reporte_service = ReportePDFService(indicador, accion)
+
+    # Generar según tipo
+    if tipo_reporte == 'completo':
+        pdf_content = reporte_service.generar_reporte_completo()
+        filename = f'reporte_completo_{indicador.id}_{datetime.datetime.now().strftime("%Y%m%d")}.pdf'
+    elif tipo_reporte == 'ejecutivo':
+        pdf_content = reporte_service.generar_reporte_ejecutivo()
+        filename = f'reporte_ejecutivo_{indicador.id}_{datetime.datetime.now().strftime("%Y%m%d")}.pdf'
+    elif tipo_reporte == 'estadistico':
+        pdf_content = reporte_service.generar_reporte_estadistico()
+        filename = f'reporte_estadistico_{indicador.id}_{datetime.datetime.now().strftime("%Y%m%d")}.pdf'
+    elif tipo_reporte == 'comparativo':
+        pdf_content = reporte_service.generar_reporte_comparativo()
+        filename = f'reporte_comparativo_{indicador.id}_{datetime.datetime.now().strftime("%Y%m%d")}.pdf'
+    else:
+        return HttpResponse('Tipo de reporte no válido', status=400)
+
+    # Preparar respuesta
+    response = HttpResponse(pdf_content, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response
+
+
+@login_required
+@permission_required('registro.view_accion', raise_exception=True)
+def generar_reporte_accion_completo(request, id_accion):
+    """Genera reporte completo de toda la acción con todos sus indicadores"""
+    accion = get_object_or_404(Accion, id=id_accion)
+    indicadores = accion.indicadores.all()
+
+    # Preparar contexto
+    context = {
+        'accion': accion,
+        'indicadores': [],
+        'fecha_generacion': datetime.datetime.now(),
+    }
+
+    # Generar datos para cada indicador
+    for indicador in indicadores:
+        resultados = indicador.resultados.all().order_by('fecha')
+        if resultados.exists():
+            statistics_calculator = StatisticsCalculatorService()
+            stats = statistics_calculator.calculate_advanced_statistics(resultados, indicador)
+
+            reporte_service = ReportePDFService(indicador, accion)
+
+            context['indicadores'].append({
+                'indicador': indicador,
+                'estadisticas': stats,
+                'ultimo_valor': resultados.last().valor,
+                'total_mediciones': resultados.count(),
+                'grafico': reporte_service._generar_grafico_tendencia(),
+            })
+
+    # Renderizar template
+    html_string = render_to_string('reportes/reporte_accion_completa.html', context)
+
+    # Generar PDF
+    font_config = FontConfiguration()
+    css = CSS(string='''
+        @page { size: A4; margin: 2cm; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; }
+        h1 { color: #1B84FF; page-break-before: always; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1B84FF; color: white; padding: 8pt; }
+        td { border: 1pt solid #ddd; padding: 6pt; }
+    ''', font_config=font_config)
+
+    pdf_content = HTML(string=html_string).write_pdf(stylesheets=[css], font_config=font_config)
+
+    # Respuesta
+    response = HttpResponse(pdf_content, content_type='application/pdf')
+    filename = f'reporte_accion_{accion.id}_{datetime.now().strftime("%Y%m%d")}.pdf'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response

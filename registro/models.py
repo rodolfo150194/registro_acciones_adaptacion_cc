@@ -193,6 +193,8 @@ class Indicador(models.Model):
 
         # Calcular basándose en la última medición real
         ultima_fecha = ultimo_resultado.fecha
+        # if timezone.is_naive(ultima_fecha):
+        #     ultima_fecha = timezone.make_aware(ultima_fecha)
 
         if 'meses' in self.frecuencia_medicion.unidad.lower():
             return ultima_fecha + relativedelta(months=self.frecuencia_medicion.cantidad)

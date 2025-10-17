@@ -1,0 +1,95 @@
+<!-- ============================================ -->
+<!-- 2. templates/reportes/reporte_ejecutivo.html -->
+<!-- ============================================ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Ejecutivo - {{ indicador.nombre }}</title>
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="color: #1B84FF;">REPORTE EJECUTIVO</h1>
+        <h2>{{ indicador.nombre }}</h2>
+        <p><strong>{{ accion.nombre }}</strong></p>
+        <p>{{ fecha_generacion|date:"d/m/Y" }}</p>
+    </div>
+
+    <div class="kpi-box">
+        <h2>Panel de Control</h2>
+        <table>
+            <tr>
+                <th>KPI</th>
+                <th>Valor</th>
+                <th>Estado</th>
+            </tr>
+            <tr>
+                <td>Valor Actual</td>
+                <td><strong style="font-size: 18pt;">{{ kpis.valor_actual|floatformat:2 }}</strong> {{ indicador.unidad_medida.nombre }}</td>
+                <td style="color: green;">●</td>
+            </tr>
+            <tr>
+                <td>Variación Total</td>
+                <td><strong style="font-size: 14pt;">{{ kpis.variacion_total|floatformat:1 }}%</strong></td>
+                <td style="color: {% if kpis.variacion_total > 0 %}green{% else %}red{% endif %};">●</td>
+            </tr>
+            <tr>
+                <td>Promedio</td>
+                <td>{{ kpis.promedio|floatformat:2 }} {{ indicador.unidad_medida.nombre }}</td>
+                <td style="color: blue;">●</td>
+            </tr>
+            <tr>
+                <td>Tendencia</td>
+                <td><strong>{{ kpis.tendencia }}</strong></td>
+                <td style="color: {% if kpis.tendencia == 'Positiva' %}green{% else %}orange{% endif %};">●</td>
+            </tr>
+            <tr>
+                <td>Efectividad</td>
+                <td><strong>{{ kpis.efectividad|title }}</strong></td>
+                <td style="color: {% if kpis.efectividad == 'alta' %}green{% elif kpis.efectividad == 'media' %}orange{% else %}red{% endif %};">●</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if meta_progress %}
+    <div class="kpi-box" style="background: #e6f7ff; margin-top: 20px;">
+        <h3>Progreso hacia Meta Climática</h3>
+        <p style="font-size: 14pt;">
+            <strong>{{ meta_progress.progreso_porcentaje|floatformat:0 }}%</strong> completado
+        </p>
+        <p>Meta: <strong>{{ meta_progress.meta_valor }}</strong> {{ indicador.unidad_medida.nombre }}</p>
+        <p>Actual: <strong>{{ meta_progress.valor_actual|floatformat:2 }}</strong> {{ indicador.unidad_medida.nombre }}</p>
+        <p>Falta: <strong>{{ meta_progress.falta_para_meta|floatformat:2 }}</strong> {{ indicador.unidad_medida.nombre }}</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 30px;">
+        <h2>Gráfico de Tendencia</h2>
+        {% if grafico_tendencia %}
+        <img src="{{ grafico_tendencia }}" alt="Tendencia" style="width: 100%;">
+        {% endif %}
+    </div>
+
+    <div class="insight" style="margin-top: 30px;">
+        <h3>Recomendación Ejecutiva</h3>
+        <p>
+            Basado en el análisis del indicador <strong>{{ indicador.nombre }}</strong>,
+            se observa una tendencia <strong>{{ kpis.tendencia|lower }}</strong> con una efectividad
+            <strong>{{ kpis.efectividad }}</strong>.
+        </p>
+        <p>
+            {% if kpis.efectividad == 'alta' %}
+            Se recomienda mantener la estrategia actual y considerar escalar las acciones implementadas.
+            {% elif kpis.efectividad == 'media' %}
+            Se sugiere optimizar las estrategias actuales para maximizar el impacto climático.
+            {% else %}
+            Se requiere revisar y reformular las estrategias de implementación urgentemente.
+            {% endif %}
+        </p>
+    </div>
+
+    <div style="position: fixed; bottom: 20px; width: 100%; text-align: center; font-size: 9pt; color: #888;">
+        <p>Reporte Ejecutivo | {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+    </div>
+</body>
+</html>

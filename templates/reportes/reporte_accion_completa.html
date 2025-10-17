@@ -1,0 +1,158 @@
+<!-- ============================================ -->
+<!-- 5. templates/reportes/reporte_accion_completa.html -->
+<!-- ============================================ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Completo - {{ accion.nombre }}</title>
+</head>
+<body>
+    <!-- Portada -->
+    <div style="text-align: center; margin-top: 100px;">
+        <h1 style="font-size: 32pt; color: #1B84FF;">REPORTE DE ACCIÓN CLIMÁTICA</h1>
+        <h2 style="font-size: 24pt; margin-top: 30px;">{{ accion.nombre }}</h2>
+        <p style="font-size: 14pt; margin-top: 40px;">
+            <strong>Tipo:</strong> {{ accion.tipo_accion.nombre }}<br>
+            <strong>Sector:</strong> {{ accion.sector.nombre }}<br>
+            <strong>Estado:</strong> {{ accion.estado_accion.nombre }}<br>
+            <strong>Fecha Inicio:</strong> {{ accion.fecha_inicio|date:"d/m/Y" }}<br>
+            <strong>Fecha de Reporte:</strong> {{ fecha_generacion|date:"d/m/Y" }}
+        </p>
+    </div>
+
+    <!-- Resumen de la Acción -->
+    <div style="page-break-before: always;">
+        <h2>1. INFORMACIÓN GENERAL</h2>
+
+        <div class="kpi-box">
+            <h3>Descripción</h3>
+            <p>{{ accion.descripcion }}</p>
+
+            <h3>Objetivo</h3>
+            <p>{{ accion.objetivo }}</p>
+
+            {% if accion.meta %}
+            <h3>Meta Climática</h3>
+            <p>{{ accion.meta }}</p>
+            {% endif %}
+        </div>
+
+        <h3>Entidades Involucradas</h3>
+        <table>
+            <tr>
+                <th>Rol</th>
+                <th>Entidad</th>
+            </tr>
+            <tr>
+                <td>Responsable</td>
+                <td>{{ accion.entidad_responsable.nombre }}</td>
+            </tr>
+            {% for entidad in accion.otras_entidades.all %}
+            <tr>
+                <td>Participante</td>
+                <td>{{ entidad.nombre }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h3>Ubicación</h3>
+        <p><strong>Provincias:</strong>
+            {% for prov in accion.provincias.all %}
+                {{ prov.nombre }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        <p><strong>Municipios:</strong>
+            {% for mun in accion.municipios.all %}
+                {{ mun.nombre }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+    </div>
+
+    <!-- Indicadores -->
+    <div style="page-break-before: always;">
+        <h2>2. INDICADORES DE LA ACCIÓN</h2>
+
+        <p>Total de indicadores monitoreados: <strong>{{ indicadores|length }}</strong></p>
+
+        {% for ind_data in indicadores %}
+        <div style="page-break-before: always;">
+            <h3>{{ forloop.counter }}. {{ ind_data.indicador.nombre }}</h3>
+
+            <table>
+                <tr>
+                    <th>Información del Indicador</th>
+                    <th>Valor</th>
+                </tr>
+                <tr>
+                    <td>Tipo</td>
+                    <td>{{ ind_data.indicador.tipo_indicador.nombre }}</td>
+                </tr>
+                <tr>
+                    <td>Unidad de Medida</td>
+                    <td>{{ ind_data.indicador.unidad_medida.nombre }}</td>
+                </tr>
+                <tr>
+                    <td>Último Valor</td>
+                    <td><strong style="font-size: 14pt;">{{ ind_data.ultimo_valor|floatformat:2 }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Total de Mediciones</td>
+                    <td>{{ ind_data.total_mediciones }}</td>
+                </tr>
+            </table>
+
+            <h4>Estadísticas Principales</h4>
+            <table>
+                <tr>
+                    <td>Promedio</td>
+                    <td>{{ ind_data.estadisticas.promedio|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td>Mínimo</td>
+                    <td>{{ ind_data.estadisticas.minimo|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td>Máximo</td>
+                    <td>{{ ind_data.estadisticas.maximo|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td>Efectividad</td>
+                    <td><strong>{{ ind_data.estadisticas.efectividad.nivel|title }}</strong></td>
+                </tr>
+            </table>
+
+            {% if ind_data.grafico %}
+            <h4>Gráfico de Tendencia</h4>
+            <img src="{{ ind_data.grafico }}" alt="Gráfico {{ ind_data.indicador.nombre }}" style="width: 100%; margin: 10px 0;">
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Conclusiones -->
+    <div style="page-break-before: always;">
+        <h2>3. CONCLUSIONES</h2>
+
+        <div class="insight">
+            <h3>Resumen General</h3>
+            <p>
+                La acción climática <strong>{{ accion.nombre }}</strong> cuenta con
+                {{ indicadores|length }} indicador{{ indicadores|length|pluralize:"es" }} monitoreado{{ indicadores|length|pluralize:"s" }}.
+            </p>
+
+            <h4>Próximos Pasos</h4>
+            <ul>
+                <li>Continuar el monitoreo sistemático de todos los indicadores</li>
+                <li>Analizar las tendencias y realizar ajustes necesarios</li>
+                <li>Documentar lecciones aprendidas</li>
+                <li>Compartir resultados con stakeholders</li>
+            </ul>
+        </div>
+    </div>
+
+    <div style="position: fixed; bottom: 20px; width: 100%; text-align: center; font-size: 9pt; color: #888;">
+        <p>Reporte Completo de Acción | {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!-- ============================================ -->
+<!-- 3. templates/reportes/reporte_estadistico.html -->
+<!-- ============================================ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Estadístico - {{ indicador.nombre }}</title>
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #1B84FF;">ANÁLISIS ESTADÍSTICO DETALLADO</h1>
+        <h2>{{ indicador.nombre }}</h2>
+        <p>{{ fecha_generacion|date:"d/m/Y" }}</p>
+    </div>
+
+    <!-- Estadísticas Descriptivas -->
+    <h2>1. ESTADÍSTICAS DESCRIPTIVAS</h2>
+
+    <table>
+        <tr>
+            <th colspan="2" style="background: #1B84FF; color: white;">Medidas de Tendencia Central</th>
+        </tr>
+        <tr>
+            <td><strong>Media Aritmética</strong></td>
+            <td>{{ estadisticas.promedio|floatformat:4 }} {{ indicador.unidad_medida.nombre }}</td>
+        </tr>
+        <tr>
+            <td><strong>Mediana (Percentil 50)</strong></td>
+            <td>{{ estadisticas.percentil_50|floatformat:4 }} {{ indicador.unidad_medida.nombre }}</td>
+        </tr>
+    </table>
+
+    <table style="margin-top: 20px;">
+        <tr>
+            <th colspan="2" style="background: #10b981; color: white;">Medidas de Dispersión</th>
+        </tr>
+        <tr>
+            <td><strong>Rango</strong></td>
+            <td>{{ estadisticas.rango|floatformat:4 }} {{ indicador.unidad_medida.nombre }}</td>
+        </tr>
+        <tr>
+            <td><strong>Desviación Estándar</strong></td>
+            <td>{{ estadisticas.desviacion|floatformat:4 }} {{ indicador.unidad_medida.nombre }}</td>
+        </tr>
+        <tr>
+            <td><strong>Coeficiente de Variación</strong></td>
+            <td>{{ estadisticas.coef_variacion|floatformat:2 }}%</td>
+        </tr>
+        <tr>
+            <td><strong>Nivel de Consistencia</strong></td>
+            <td><strong>{{ estadisticas.consistencia_nivel }}</strong></td>
+        </tr>
+    </table>
+
+    <table style="margin-top: 20px;">
+        <tr>
+            <th colspan="2" style="background: #f59e0b; color: white;">Valores Extremos</th>
+        </tr>
+        <tr>
+            <td><strong>Mínimo</strong></td>
+            <td>{{ estadisticas.minimo|floatformat:4 }} {{ indicador.unidad_medida.nombre }}</td>
+        </tr>
+        <tr>
+            <td><strong>Máximo</strong></td>
+            <td>{{ estadisticas.maximo|floatformat:4 }} {{ indicador.unidad_medida.nombre }}</td>
+        </tr>
+    </table>
+
+    <!-- Cuartiles -->
+    <div style="page-break-before: always;">
+        <h2>2. ANÁLISIS DE CUARTILES</h2>
+
+        <table>
+            <tr>
+                <th>Cuartil</th>
+                <th>Valor</th>
+                <th>Interpretación</th>
+            </tr>
+            <tr>
+                <td><strong>Q1 (25%)</strong></td>
+                <td>{{ estadisticas.percentil_25|floatformat:2 }}</td>
+                <td>El 25% de los valores están por debajo</td>
+            </tr>
+            <tr>
+                <td><strong>Q2 (50%) - Mediana</strong></td>
+                <td>{{ estadisticas.percentil_50|floatformat:2 }}</td>
+                <td>Valor central de la distribución</td>
+            </tr>
+            <tr>
+                <td><strong>Q3 (75%)</strong></td>
+                <td>{{ estadisticas.percentil_75|floatformat:2 }}</td>
+                <td>El 75% de los valores están por debajo</td>
+            </tr>
+            <tr>
+                <td><strong>Q4 (90%)</strong></td>
+                <td>{{ estadisticas.percentil_90|floatformat:2 }}</td>
+                <td>El 90% de los valores están por debajo</td>
+            </tr>
+        </table>
+
+        {% if graficos.distribucion %}
+        <h3>Distribución de Frecuencias</h3>
+        <img src="{{ graficos.distribucion }}" alt="Distribución" style="width: 100%; margin: 20px 0;">
+        {% endif %}
+
+        {% if graficos.boxplot %}
+        <h3>Diagrama de Caja (Boxplot)</h3>
+        <img src="{{ graficos.boxplot }}" alt="Boxplot" style="width: 100%; margin: 20px 0;">
+        {% endif %}
+    </div>
+
+    <!-- Análisis de Tendencia -->
+    <div style="page-break-before: always;">
+        <h2>3. ANÁLISIS DE TENDENCIA</h2>
+
+        <table>
+            <tr>
+                <th>Métrica</th>
+                <th>Valor</th>
+            </tr>
+            <tr>
+                <td><strong>Velocidad de Cambio Mensual</strong></td>
+                <td>{{ estadisticas.velocidad_mensual|floatformat:4 }} {{ indicador.unidad_medida.nombre }}/mes</td>
+            </tr>
+            <tr>
+                <td><strong>Efectividad Climática</strong></td>
+                <td><strong>{{ estadisticas.efectividad.nivel|title }}</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Descripción</strong></td>
+                <td>{{ estadisticas.efectividad.descripcion }}</td>
+            </tr>
+        </table>
+
+        {% if graficos.tendencia %}
+        <img src="{{ graficos.tendencia }}" alt="Tendencia" style="width: 100%; margin: 20px 0;">
+        {% endif %}
+    </div>
+
+    <!-- Tabla de Datos -->
+    <div style="page-break-before: always;">
+        <h2>4. TABLA DE DATOS COMPLETA</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Fecha</th>
+                    <th>Valor</th>
+                    <th>Observación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dato in tabla_datos %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ dato.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ dato.valor|floatformat:2 }}</td>
+                    <td style="font-size: 9pt;">{{ dato.observacion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="position: fixed; bottom: 20px; width: 100%; text-align: center; font-size: 9pt; color: #888;">
+        <p>Reporte Estadístico | {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+    </div>
+</body>
+</html>

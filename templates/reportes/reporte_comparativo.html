@@ -1,0 +1,111 @@
+<!-- ============================================ -->
+<!-- 4. templates/reportes/reporte_comparativo.html -->
+<!-- ============================================ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Comparativo - {{ accion.nombre }}</title>
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #1B84FF;">REPORTE COMPARATIVO DE INDICADORES</h1>
+        <h2>{{ accion.nombre }}</h2>
+        <p>{{ fecha_generacion|date:"d/m/Y" }}</p>
+    </div>
+
+    <!-- Indicador Principal -->
+    <div class="kpi-box">
+        <h2>Indicador Analizado</h2>
+        <p><strong>{{ indicador.nombre }}</strong></p>
+        <p>Tipo: {{ indicador.tipo_indicador.nombre }}</p>
+        <p>Unidad: {{ indicador.unidad_medida.nombre }}</p>
+    </div>
+
+    <!-- Comparación -->
+    <h2>Comparación con Otros Indicadores de la Acción</h2>
+
+    {% if comparaciones %}
+    <table>
+        <thead>
+            <tr>
+                <th>Indicador</th>
+                <th>Último Valor</th>
+                <th>Promedio</th>
+                <th>N° Mediciones</th>
+                <th>Estado Relativo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Indicador actual -->
+            <tr style="background: #e6f7ff;">
+                <td><strong>{{ indicador.nombre }}</strong> (Actual)</td>
+                <td><strong>{{ indicador.get_ultimo_valor }}</strong></td>
+                <td>-</td>
+                <td>{{ indicador.resultados.count }}</td>
+                <td style="text-align: center;">📊</td>
+            </tr>
+
+            <!-- Otros indicadores -->
+            {% for comp in comparaciones %}
+            <tr>
+                <td>{{ comp.nombre }}</td>
+                <td>{{ comp.ultimo_valor|floatformat:2 }}</td>
+                <td>{{ comp.promedio|floatformat:2 }}</td>
+                <td>{{ comp.num_mediciones }}</td>
+                <td style="text-align: center;">
+                    {% if comp.ultimo_valor > indicador.get_ultimo_valor %}
+                        ⬆️
+                    {% elif comp.ultimo_valor < indicador.get_ultimo_valor %}
+                        ⬇️
+                    {% else %}
+                        ↔️
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 30px;">
+        <h3>Análisis Comparativo</h3>
+        <p>
+            El indicador <strong>{{ indicador.nombre }}</strong> se encuentra
+            {% if comparaciones %}
+            en comparación con {{ comparaciones|length }} indicador{{ comparaciones|length|pluralize:"es" }} adicional{{ comparaciones|length|pluralize:"es" }}
+            de la misma acción climática.
+            {% else %}
+            como el único indicador registrado en esta acción.
+            {% endif %}
+        </p>
+    </div>
+
+    {% if grafico_comparativo %}
+    <div style="page-break-before: always;">
+        <h2>Gráfico Comparativo</h2>
+        <img src="{{ grafico_comparativo }}" alt="Comparativo" style="width: 100%; margin: 20px 0;">
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="insight">
+        <p>No hay otros indicadores en esta acción para realizar la comparación.</p>
+    </div>
+    {% endif %}
+
+    <!-- Recomendaciones -->
+    <div class="insight" style="margin-top: 30px;">
+        <h3>Recomendaciones</h3>
+        <ul>
+            <li>Mantener el monitoreo regular de todos los indicadores</li>
+            <li>Analizar las relaciones entre diferentes indicadores</li>
+            <li>Identificar indicadores rezagados que requieren atención</li>
+            <li>Utilizar indicadores de mejor desempeño como benchmark</li>
+        </ul>
+    </div>
+
+    <div style="position: fixed; bottom: 20px; width: 100%; text-align: center; font-size: 9pt; color: #888;">
+        <p>Reporte Comparativo | {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+    </div>
+</body>
+</html>
