@@ -80,7 +80,7 @@
                         {% endfor %}
                     </select>
                 </div>
-            <!-- Sector -->
+                <!-- Sector -->
                 <div class="mb-3">
                     <label class="form-label small">Escenario</label>
                     <select class="form-select" id="escenarioFilter">
@@ -156,51 +156,69 @@
     <script src="{% static 'assets/js/shapefile.js' %}"></script>
     <script>
 
-            //Filtros
-            const locale_flatpickr = {
-                firstDayOfWeek: 1,
-                weekdays: {
-                    shorthand: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                    longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
-                },
-                months: {
-                    shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Оct', 'Nov', 'Dic'],
-                    longhand: ['Enero', 'Febrero', 'Мarzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
-                },
-            };
-            $('#peridoFilter').flatpickr({
-                altInput: !0,
-                altFormat: "d/m/Y",
-                dateFormat: "Y-m-d",
-                mode: 'range',
-                locale: locale_flatpickr
-            });
+        //Filtros
+        const locale_flatpickr = {
+            firstDayOfWeek: 1,
+            weekdays: {
+                shorthand: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+            },
+            months: {
+                shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Оct', 'Nov', 'Dic'],
+                longhand: ['Enero', 'Febrero', 'Мarzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            },
+        };
+        $('#peridoFilter').flatpickr({
+            altInput: !0,
+            altFormat: "d/m/Y",
+            dateFormat: "Y-m-d",
+            mode: 'range',
+            locale: locale_flatpickr
+        });
 
 
-            var map = L.map('map').setView([21.5, -80.0], 7);
-            map.zoomControl.setPosition('topright');
-            var provinciasLayer;
-            var shpLayer;
-            var municipiosLayer = null;
+        var map = L.map('map').setView([21.5, -80.0], 7);
+        map.zoomControl.setPosition('topright');
+        var provinciasLayer;
+        var shpLayer;
+        var municipiosLayer = null;
 
-            // Capa base normal
-            var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
+        // Capa base normal
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
-            // Capa satélite (ejemplo, otra base)
-            var esriSat = L.tileLayer(
-                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                {attribution: 'Tiles © Esri'}
-            );
+        // Capa satélite (ejemplo, otra base)
+        var esriSat = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {attribution: 'Tiles © Esri'}
+        );
 
-            function getRandomColor() {
-                const letters = '0123456789ABCDEF';
-                let color = '#';
-                for (let i = 0; i < 6; i++) {
-                    color += letters[Math.floor(Math.random() * 16)];
-                }
-                return color;
+        function getRandomColor() {
+            {#const letters = '0123456789ABCDEF';#}
+            {#let color = '#';#}
+            {#for (let i = 0; i < 6; i++) {#}
+            {#    color += letters[Math.floor(Math.random() * 16)];#}
+            {#}#}
+                {#return color;#}
+                const darkColors = [
+                    '#1e3a8a', // Azul oscuro
+                    '#166534', // Verde oscuro
+                    '#7c2d12', // Marrón oscuro
+                    '#7c3aed', // Púrpura oscuro
+                    '#be123c', // Rosa oscuro
+                    '#c2410c', // Naranja oscuro
+                    '#0e7490', // Cian oscuro
+                    '#4c1d95', // Violeta oscuro
+                    '#831843', // Fucsia oscuro
+                    '#065f46', // Esmeralda oscuro
+                    '#1e40af', // Azul índigo
+                    '#92400e', // Ámbar oscuro
+                    '#422006', // Amarillo oscuro
+                    '#134e4a', // Verde azulado
+                    '#581c87', // Púrpura profundo
+                ];
+                return darkColors[Math.floor(Math.random() * darkColors.length)];
             }
 
             {#fetch("{% static 'data/cuba.json' %}")  #}
@@ -233,153 +251,156 @@
                     {#provincias.addTo(map);#}
                 });
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('d-lg-none');
-        }
+            function toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('d-lg-none');
+            }
 
-        function aplicarFiltros() {
-            var tipo = document.getElementById('tipoFilter').value;
-            var estado = document.getElementById('estadoFilter').value;
-            var sector = document.getElementById('sectorFilter').value;
-            var escenario = document.getElementById('escenarioFilter').value;
-            var fecha = document.getElementById('peridoFilter').value;
-            // Construir los parámetros dinámicamente
-            var params = [];
-            if (tipo) params.push('tipo=' + encodeURIComponent(tipo));
-            if (estado) params.push('estado=' + encodeURIComponent(estado));
-            if (sector) params.push('sector=' + encodeURIComponent(sector));
-            if (escenario) params.push('escenario=' + encodeURIComponent(escenario));
-            if (fecha) params.push('fecha=' + encodeURIComponent(fecha));
-            var queryString = params.length > 0 ? '?' + params.join('&') : '';
-            fetch(`{% url 'registro:municipios_por_tipo_accion' %}${queryString}`)
-                .then(res => {
-                    if (!res.ok) {
-                        return res.json().then(err => { throw err; });
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    // Actualizar resumen ejecutivo
-                    if (data.resumen) {
-                        document.getElementById('totalAcciones').textContent = data.resumen.total_acciones;
-                        document.getElementById('accionesActivas').textContent = data.resumen.total_activas;
-                        if (data.resumen.presupuesto_total && data.resumen.presupuesto_total.length > 0) {
-                            document.getElementById('presupuestoTotal').innerHTML = data.resumen.presupuesto_total.map(p => `${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
-                        } else {
-                            document.getElementById('presupuestoTotal').innerHTML = 'N/D';
+            function aplicarFiltros() {
+                var tipo = document.getElementById('tipoFilter').value;
+                var estado = document.getElementById('estadoFilter').value;
+                var sector = document.getElementById('sectorFilter').value;
+                var escenario = document.getElementById('escenarioFilter').value;
+                var fecha = document.getElementById('peridoFilter').value;
+                // Construir los parámetros dinámicamente
+                var params = [];
+                if (tipo) params.push('tipo=' + encodeURIComponent(tipo));
+                if (estado) params.push('estado=' + encodeURIComponent(estado));
+                if (sector) params.push('sector=' + encodeURIComponent(sector));
+                if (escenario) params.push('escenario=' + encodeURIComponent(escenario));
+                if (fecha) params.push('fecha=' + encodeURIComponent(fecha));
+                var queryString = params.length > 0 ? '?' + params.join('&') : '';
+                fetch(`{% url 'registro:municipios_por_tipo_accion' %}${queryString}`)
+                    .then(res => {
+                        if (!res.ok) {
+                            return res.json().then(err => {
+                                throw err;
+                            });
                         }
-                    }
-                    if (municipiosLayer) {
-                        map.removeLayer(municipiosLayer);
-                        municipiosLayer = null;
-                    }
-                    if (data.tipo === 'municipio') {
-                        // Agrupar municipios por provincia_hc_keys
-                        const grupos = {};
-                        data.municipios.forEach(m => {
-                            if (!grupos[m.provincia_hc_keys]) grupos[m.provincia_hc_keys] = [];
-                            grupos[m.provincia_hc_keys].push(m);
-                        });
-                        Object.keys(grupos).forEach(hc_keys => {
-                            fetch(`/static/data/municipios/${hc_keys}.geojson`)
-                                .then(res => res.json())
-                                .then(geojson => {
-                                    const ids = grupos[hc_keys].map(m => m.municipio_id);
-                                    const municipiosData = grupos[hc_keys];
-                                    const nombres = municipiosData.map(m => m.municipio_nombre.trim().toLowerCase());
-                                    const layer = L.geoJSON(geojson, {
-                                        filter: function (feature) {
-                                            // Comparar por nombre de municipio (insensible a mayúsculas/minúsculas y espacios)
-                                            return nombres.includes((feature.properties.municipality || '').trim().toLowerCase());
-                                        },
-                                        style: {
-                                            color: getRandomColor(),
-                                            weight: 2,
-                                            {#fillColor: '#2c7fb8',#}
-                                            fillOpacity: 0.5
-                                        },
-                                        onEachFeature: function (feature, lyr) {
-                                            const municipio = municipiosData.find(m => m.municipio_nombre.trim().toLowerCase() === (feature.properties.municipality || '').trim().toLowerCase());
-                                            console.log(data.resumen)
-                                            if (municipio) {
+                        return res.json();
+                    })
+                    .then(data => {
+                        // Actualizar resumen ejecutivo
+                        if (data.resumen) {
+                            document.getElementById('totalAcciones').textContent = data.resumen.total_acciones;
+                            document.getElementById('accionesActivas').textContent = data.resumen.total_activas;
+                            if (data.resumen.presupuesto_total && data.resumen.presupuesto_total.length > 0) {
+                                document.getElementById('presupuestoTotal').innerHTML = data.resumen.presupuesto_total.map(p => `${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
+                            } else {
+                                document.getElementById('presupuestoTotal').innerHTML = 'N/D';
+                            }
+                        }
+                        if (municipiosLayer) {
+                            map.removeLayer(municipiosLayer);
+                            municipiosLayer = null;
+                        }
+                        if (data.tipo === 'municipio') {
+                            // Agrupar municipios por provincia_hc_keys
+                            const grupos = {};
+                            data.municipios.forEach(m => {
+                                if (!grupos[m.provincia_hc_keys]) grupos[m.provincia_hc_keys] = [];
+                                grupos[m.provincia_hc_keys].push(m);
+                            });
+                            Object.keys(grupos).forEach(hc_keys => {
+                                fetch(`/static/data/municipios/${hc_keys}.geojson`)
+                                    .then(res => res.json())
+                                    .then(geojson => {
+                                        const ids = grupos[hc_keys].map(m => m.municipio_id);
+                                        const municipiosData = grupos[hc_keys];
+                                        const nombres = municipiosData.map(m => m.municipio_nombre.trim().toLowerCase());
+                                        const layer = L.geoJSON(geojson, {
+                                            filter: function (feature) {
+                                                // Comparar por nombre de municipio (insensible a mayúsculas/minúsculas y espacios)
+                                                return nombres.includes((feature.properties.municipality || '').trim().toLowerCase());
+                                            },
+                                            style: {
+                                                color: getRandomColor(),
+                                                weight: 2,
+                                                {#fillColor: '#2c7fb8',#}
+                                                fillOpacity: 0.5
+                                            },
+                                            onEachFeature: function (feature, lyr) {
+                                                const municipio = municipiosData.find(m => m.municipio_nombre.trim().toLowerCase() === (feature.properties.municipality || '').trim().toLowerCase());
+                                                console.log(data.resumen)
+                                                if (municipio) {
+                                                    let presupuestoHtml = '';
+                                                    if (municipio.presupuesto_total && municipio.presupuesto_total.length > 0) {
+                                                        presupuestoHtml = '<b>Presupuesto:</b><br>' + municipio.presupuesto_total.map(p => `- ${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
+                                                    } else {
+                                                        presupuestoHtml = '<b>Presupuesto:</b> N/D';
+                                                    }
+                                                    lyr.bindPopup(
+                                                        `<b>${municipio.municipio_nombre}</b><br>` +
+                                                        `Provincia: ${municipio.provincia_nombre}<br>` +
+                                                        `Acciones: ${municipio.acciones_count}<br>` +
+                                                        `${presupuestoHtml}`
+                                                    );
+                                                }
+                                            }
+                                        });
+                                        if (!municipiosLayer) municipiosLayer = L.layerGroup();
+                                        municipiosLayer.addLayer(layer);
+                                        municipiosLayer.addTo(map);
+                                        // Zoom si solo hay un municipio
+                                        if (ids.length === 1) {
+                                            layer.eachLayer(function (l) {
+                                                map.fitBounds(l.getBounds());
+                                            });
+                                        }
+                                    });
+                            });
+                        } else if (data.tipo === 'provincia') {
+                            data.provincias.forEach(prov => {
+                                fetch(`/static/data/provincias/${prov.provincia_hc_keys}.geojson`)
+                                    .then(res => res.json())
+                                    .then(geojson => {
+                                        const layer = L.geoJSON(geojson, {
+                                            style: {
+                                                color: '#2c7fb8',
+                                                weight: 2,
+                                                fillColor: '#2c7fb8',
+                                                fillOpacity: 0.5
+                                            },
+                                            onEachFeature: function (feature, lyr) {
                                                 let presupuestoHtml = '';
-                                                if (municipio.presupuesto_total && municipio.presupuesto_total.length > 0) {
-                                                    presupuestoHtml = '<b>Presupuesto:</b><br>' + municipio.presupuesto_total.map(p => `- ${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
+                                                console.log(data.resumen)
+                                                if (prov.presupuesto_total && prov.presupuesto_total.length > 0) {
+                                                    presupuestoHtml = '<b>Presupuesto:</b><br>' + prov.presupuesto_total.map(p => `- ${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
                                                 } else {
                                                     presupuestoHtml = '<b>Presupuesto:</b> N/D';
                                                 }
                                                 lyr.bindPopup(
-                                                    `<b>${municipio.municipio_nombre}</b><br>` +
-                                                    `Provincia: ${municipio.provincia_nombre}<br>` +
-                                                    `Acciones: ${municipio.acciones_count}<br>` +
+                                                    `<b>${prov.provincia_nombre}</b><br>` +
+                                                    `Acciones: ${prov.acciones_count}<br>` +
                                                     `${presupuestoHtml}`
                                                 );
                                             }
-                                        }
-                                    });
-                                    if (!municipiosLayer) municipiosLayer = L.layerGroup();
-                                    municipiosLayer.addLayer(layer);
-                                    municipiosLayer.addTo(map);
-                                    // Zoom si solo hay un municipio
-                                    if (ids.length === 1) {
+                                        });
+                                        if (!municipiosLayer) municipiosLayer = L.layerGroup();
+                                        municipiosLayer.addLayer(layer);
+                                        municipiosLayer.addTo(map);
+                                        // Zoom si solo hay una provincia
                                         layer.eachLayer(function (l) {
                                             map.fitBounds(l.getBounds());
                                         });
-                                    }
-                                });
-                        });
-                    } else if (data.tipo === 'provincia') {
-                        data.provincias.forEach(prov => {
-                            fetch(`/static/data/provincias/${prov.provincia_hc_keys}.geojson`)
-                                .then(res => res.json())
-                                .then(geojson => {
-                                    const layer = L.geoJSON(geojson, {
-                                        style: {
-                                            color: '#2c7fb8',
-                                            weight: 2,
-                                            fillColor: '#2c7fb8',
-                                            fillOpacity: 0.5
-                                        },
-                                        onEachFeature: function (feature, lyr) {
-                                            let presupuestoHtml = '';
-                                            console.log(data.resumen)
-                                            if (prov.presupuesto_total && prov.presupuesto_total.length > 0) {
-                                                presupuestoHtml = '<b>Presupuesto:</b><br>' + prov.presupuesto_total.map(p => `- ${p.moneda}: $${p.monto_total.toLocaleString()}`).join('<br>');
-                                            } else {
-                                                presupuestoHtml = '<b>Presupuesto:</b> N/D';
-                                            }
-                                            lyr.bindPopup(
-                                                `<b>${prov.provincia_nombre}</b><br>` +
-                                                `Acciones: ${prov.acciones_count}<br>` +
-                                                `${presupuestoHtml}`
-                                            );
-                                        }
                                     });
-                                    if (!municipiosLayer) municipiosLayer = L.layerGroup();
-                                    municipiosLayer.addLayer(layer);
-                                    municipiosLayer.addTo(map);
-                                    // Zoom si solo hay una provincia
-                                    layer.eachLayer(function (l) {
-                                        map.fitBounds(l.getBounds());
-                                    });
-                                });
-                        });
-                    }
-                })
-                .catch(err => {
-                    let msg = (err && err.error) ? err.error : 'Ocurrió un error al cargar los datos.';
-                    toastr.error(msg, 'Error');
-                });
-        }
-        function limpiarFiltros() {
-            document.getElementById('tipoFilter').value = '';
-            document.getElementById('sectorFilter').value = '';
-            document.getElementById('estadoFilter').value = '';
-            document.getElementById('searchInput').value = '';
-            document.getElementById('peridoFilter').value = null;
-            aplicarFiltros();
-        }
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        let msg = (err && err.error) ? err.error : 'Ocurrió un error al cargar los datos.';
+                        toastr.error(msg, 'Error');
+                    });
+            }
+
+            function limpiarFiltros() {
+                document.getElementById('tipoFilter').value = '';
+                document.getElementById('sectorFilter').value = '';
+                document.getElementById('estadoFilter').value = '';
+                document.getElementById('searchInput').value = '';
+                document.getElementById('peridoFilter').value = null;
+                aplicarFiltros();
+            }
 
     </script>
 {% endblock %}

@@ -1,5 +1,7 @@
 import base64
 import statistics
+import matplotlib
+matplotlib.use('Agg')
 from datetime import timedelta, datetime
 from io import BytesIO
 from typing import List, Dict, Any, Optional
@@ -9,6 +11,7 @@ from django.db.models import Avg, Min, Max, StdDev
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+
 from matplotlib import pyplot as plt
 from sympy import sympify, Symbol, stats
 from weasyprint import HTML, CSS
@@ -447,58 +450,154 @@ class InsightGeneratorService:
         # 1. Análisis de efectividad climática
         insights.extend(InsightGeneratorService._analyze_climate_effectiveness(statistics, variations, indicador))
 
-        # 2. Análisis de tendencias temporales
+        # 2. Análisis de dirección óptima (NUEVO)
+        insights.extend(InsightGeneratorService._analyze_direction_effectiveness(object_list, indicador))
+
+        # 3. Análisis de tendencias temporales
         insights.extend(InsightGeneratorService._analyze_temporal_trends(object_list, variations, indicador))
 
-        # 3. Análisis de calidad de datos
+        # 4. Análisis de calidad de datos
         insights.extend(InsightGeneratorService._analyze_data_quality(statistics, object_list))
 
-        # 4. Análisis de progreso hacia metas
+        # 5. Análisis de progreso hacia metas (MEJORADO)
         insights.extend(InsightGeneratorService._analyze_goal_progress(indicador))
 
-        # 5. Análisis de frecuencia de medición
+        # 6. Análisis de frecuencia de medición
         insights.extend(InsightGeneratorService._analyze_measurement_frequency(object_list, indicador))
 
-        # 6. Recomendaciones estratégicas
+        # 7. Recomendaciones estratégicas
         insights.extend(InsightGeneratorService._generate_strategic_recommendations(
             object_list, statistics, variations, indicador
         ))
 
-        return insights[:5]  # Limitar a 5 insights más relevantes
+        # Priorizar insights críticos primero
+        insights.sort(key=lambda x: {'critico': 0, 'regular': 1, 'bueno': 2, 'excelente': 3}.get(x['nivel'], 4))
+
+        return insights[:6] # Limitar a 6 insights más relevantes
 
     @staticmethod
     def _analyze_climate_effectiveness(statistics, variations, indicador):
-        """Analiza la efectividad de la acción climática"""
+        """Analiza la efectividad de la acción climática CONSIDERANDO LA META"""
         insights = []
         efectividad = statistics.get('efectividad', {})
 
+        # CRÍTICO: Obtener el progreso de la meta antes de evaluar efectividad
+        progreso_meta = indicador.calcular_progreso_meta()
+        tiene_meta = progreso_meta is not None
+        progreso_pct = progreso_meta.get('progreso_porcentaje', 0) if tiene_meta else 0
+
+        # Caso 1: Alta efectividad
         if efectividad.get('nivel') == 'alta':
-            insights.append({
-                'tipo': 'efectividad_alta',
-                'titulo': 'Acción Climática Altamente Efectiva',
-                'descripcion': f"Impacto positivo confirmado con {efectividad.get('descripcion', '').lower()}. Considera replicar esta estrategia en otros sectores.",
-                'nivel': 'excelente',
-                'icono': 'ki-verify',
-                'accion_recomendada': 'Expandir implementación'
-            })
+            # SUB-CASO 1A: Efectivo Y con buen progreso hacia meta (>60%)
+            if tiene_meta and progreso_pct > 60:
+                insights.append({
+                    'tipo': 'efectividad_alta',
+                    'titulo': 'Acción Climática Altamente Efectiva',
+                    'descripcion': f"Impacto positivo confirmado con {efectividad.get('descripcion', '').lower()} y {progreso_pct:.1f}% de progreso hacia la meta. Estrategia efectiva y bien encaminada para cumplir objetivos.",
+                    'nivel': 'excelente',
+                    'icono': 'ki-verify',
+                    'accion_recomendada': 'Mantener estrategia y considerar replicar en otros sectores'
+                })
+            # SUB-CASO 1B: Efectivo PERO con bajo progreso hacia meta (<=60%)
+            elif tiene_meta and progreso_pct <= 60:
+                insights.append({
+                    'tipo': 'efectividad_insuficiente_para_meta',
+                    'titulo': 'Mejora Positiva pero Insuficiente para Meta',
+                    'descripcion': f"Se observa {efectividad.get('descripcion', '').lower()}, sin embargo el progreso hacia la meta es solo {progreso_pct:.1f}%. La estrategia funciona pero necesita INTENSIFICARSE para alcanzar el objetivo.",
+                    'nivel': 'regular',
+                    'icono': 'ki-arrow-up',
+                    'accion_recomendada': 'Intensificar implementación - aumentar recursos, frecuencia o escala'
+                })
+            # SUB-CASO 1C: Efectivo sin meta definida
+            else:
+                insights.append({
+                    'tipo': 'efectividad_alta_sin_meta',
+                    'titulo': 'Mejora Significativa Detectada',
+                    'descripcion': f"Impacto positivo confirmado con {efectividad.get('descripcion', '').lower()}. Considera establecer una meta específica para medir el éxito completo.",
+                    'nivel': 'excelente',
+                    'icono': 'ki-verify',
+                    'accion_recomendada': 'Establecer meta cuantificable'
+                })
+
+        # Caso 2: Efectividad negativa
         elif efectividad.get('nivel') == 'negativa':
             insights.append({
                 'tipo': 'efectividad_baja',
-                'titulo': 'Acción Requiere Reformulación',
-                'descripcion': f"Resultados sugieren impacto negativo. Revisar metodología, presupuesto y estrategia de implementación.",
+                'titulo': 'Acción Requiere Reformulación Urgente',
+                'descripcion': f"Resultados muestran {efectividad.get('descripcion', '').lower()}. El indicador se mueve en dirección contraria a la deseada. Revisar metodología, presupuesto y estrategia de implementación.",
                 'nivel': 'critico',
                 'icono': 'ki-shield-cross',
-                'accion_recomendada': 'Revisar estrategia inmediatamente'
+                'accion_recomendada': 'URGENTE: Suspender y revisar estrategia completa'
             })
+
+        # Caso 3: Efectividad media
         elif efectividad.get('nivel') == 'media':
-            insights.append({
-                'tipo': 'efectividad_media',
-                'titulo': 'Potencial de Optimización',
-                'descripcion': f"Efectividad moderada detectada. Analizar factores limitantes para maximizar impacto climático.",
-                'nivel': 'bueno',
-                'icono': 'ki-arrows-circle',
-                'accion_recomendada': 'Optimizar implementación'
-            })
+            # SUB-CASO 3A: Media pero con buen progreso
+            if tiene_meta and progreso_pct > 70:
+                insights.append({
+                    'tipo': 'efectividad_media_progreso_bueno',
+                    'titulo': 'Progreso Sostenido hacia Meta',
+                    'descripcion': f"Efectividad moderada ({efectividad.get('descripcion', '').lower()}) pero con {progreso_pct:.1f}% de progreso. Mantener estrategia actual.",
+                    'nivel': 'bueno',
+                    'icono': 'ki-check',
+                    'accion_recomendada': 'Mantener curso actual'
+                })
+            # SUB-CASO 3B: Media con bajo progreso
+            else:
+                insights.append({
+                    'tipo': 'efectividad_media',
+                    'titulo': 'Potencial de Optimización',
+                    'descripcion': f"Efectividad moderada detectada. Analizar factores limitantes para maximizar impacto climático y acelerar progreso.",
+                    'nivel': 'regular',
+                    'icono': 'ki-arrows-circle',
+                    'accion_recomendada': 'Optimizar implementación y aumentar intensidad'
+                })
+
+        return insights
+
+    @staticmethod
+    def _analyze_direction_effectiveness(object_list, indicador):
+        """Analiza si el indicador se está moviendo en la dirección correcta"""
+        insights = []
+
+        if len(object_list) < 2:
+            return insights
+
+        ultimo = object_list.order_by('-fecha').first()
+        penultimo = object_list.order_by('-fecha')[1] if len(object_list) > 1 else None
+
+        if not penultimo:
+            return insights
+
+        cambio = ultimo.valor - penultimo.valor
+        direccion_actual = 'incremento' if cambio > 0 else 'decremento'
+
+        # Verificar si va en la dirección correcta
+        if direccion_actual != indicador.direccion_optima:
+            # Calcular cuántos de los últimos resultados van en dirección incorrecta
+            ultimos_5 = list(object_list.order_by('-fecha')[:5])
+            direccion_incorrecta_count = 0
+
+            for i in range(len(ultimos_5) - 1):
+                cambio_i = ultimos_5[i].valor - ultimos_5[i + 1].valor
+                dir_i = 'incremento' if cambio_i > 0 else 'decremento'
+                if dir_i != indicador.direccion_optima:
+                    direccion_incorrecta_count += 1
+
+            if direccion_incorrecta_count >= 3:
+                insights.append({
+                    'tipo': 'direccion_incorrecta',
+                    'titulo': 'Movimiento en Dirección No Deseada',
+                    'descripcion': f"El indicador se está moviendo hacia el {direccion_actual}, pero la dirección óptima es {indicador.get_direccion_optima_display()}. Las últimas {direccion_incorrecta_count} de 4 mediciones muestran esta tendencia negativa.",
+                    'nivel': 'critico',
+                    'icono': 'ki-arrow-circle',
+                    'accion_recomendada': 'URGENTE: Revisar y ajustar estrategia de implementación',
+                    'datos_adicionales': {
+                        'direccion_actual': direccion_actual,
+                        'direccion_optima': indicador.direccion_optima,
+                        'mediciones_incorrectas': direccion_incorrecta_count
+                    }
+                })
 
         return insights
 
@@ -625,46 +724,209 @@ class InsightGeneratorService:
 
     @staticmethod
     def _analyze_goal_progress(indicador):
-        """Analiza el progreso hacia las metas climáticas"""
+        """Analiza el progreso hacia las metas climáticas con mayor detalle"""
         insights = []
         progreso_meta = indicador.calcular_progreso_meta()
 
-        if progreso_meta:
-            progreso_pct = progreso_meta['progreso_porcentaje']
+        if not progreso_meta or not indicador.meta_fecha_limite:
+            return insights
 
-            if progreso_meta['meta_alcanzada']:
-                insights.append({
-                    'tipo': 'meta_alcanzada',
-                    'titulo': '🎯 Meta Climática Superada',
-                    'descripcion': f"Meta alcanzada exitosamente ({progreso_pct:.1f}%). Considerar establecer objetivos más ambiciosos para 2030.",
-                    'nivel': 'excelente',
-                    'icono': 'ki-crown',
-                    'accion_recomendada': 'Establecer nueva meta más ambiciosa'
-                })
-            elif progreso_pct > 80:
-                dias_restantes = (
-                            indicador.meta_fecha_limite - timezone.now().date()).days if indicador.meta_fecha_limite else None
-                tiempo_msg = f" en {dias_restantes} días" if dias_restantes and dias_restantes > 0 else ""
+        progreso_pct = progreso_meta['progreso_porcentaje']
+        meta_alcanzada = progreso_meta['meta_alcanzada']
+        dias_restantes = (indicador.meta_fecha_limite - timezone.now().date()).days
 
+        # Obtener acción si existe
+        accion = getattr(indicador, 'accion', None)
+        dias_totales = (indicador.meta_fecha_limite - accion.fecha_inicio).days if accion else None
+
+        # Calcular porcentaje de tiempo transcurrido
+        if dias_totales and dias_totales > 0:
+            dias_transcurridos = dias_totales - dias_restantes
+            pct_tiempo = (dias_transcurridos / dias_totales) * 100
+        else:
+            pct_tiempo = 0
+
+        # Determinar dirección del indicador para mensajes personalizados
+        dir_texto = "reducción" if indicador.direccion_optima == 'decremento' else "incremento"
+
+        # === CASO 1: Meta ya alcanzada ===
+        if meta_alcanzada:
+            insights.append({
+                'tipo': 'meta_alcanzada',
+                'titulo': 'Meta Climática Superada',
+                'descripcion': f"¡Excelente! Meta de {dir_texto} alcanzada con {progreso_pct:.1f}% de cumplimiento y {dias_restantes} días de anticipación. Considerar establecer objetivos más ambiciosos alineados con NDC 2030.",
+                'nivel': 'excelente',
+                'icono': 'ki-crown',
+                'accion_recomendada': 'Establecer nueva meta más ambiciosa',
+                'datos_adicionales': {
+                    'dias_anticipacion': dias_restantes,
+                    'fecha_meta': indicador.meta_fecha_limite.strftime('%d/%m/%Y'),
+                    'direccion': indicador.get_direccion_optima_display()
+                }
+            })
+            return insights
+
+        # === CASO 2: Progreso excelente (>80%) ===
+        if progreso_pct > 80:
+            tiempo_msg = f" en {dias_restantes} días" if dias_restantes > 0 else ""
+            insights.append({
+                'tipo': 'meta_cerca',
+                'titulo': 'Meta Climática al Alcance',
+                'descripcion': f"Progreso destacado del {progreso_pct:.1f}% hacia la meta de {dir_texto}. Mantener esfuerzos actuales para alcanzar meta{tiempo_msg}. Fecha límite: {indicador.meta_fecha_limite.strftime('%d/%m/%Y')}.",
+                'nivel': 'excelente',
+                'icono': 'ki-medal-star',
+                'accion_recomendada': 'Mantener intensidad actual',
+                'datos_adicionales': {
+                    'progreso': progreso_pct,
+                    'dias_restantes': dias_restantes,
+                    'fecha_meta': indicador.meta_fecha_limite.strftime('%d/%m/%Y'),
+                    'direccion': indicador.get_direccion_optima_display()
+                }
+            })
+
+        # === CASO 3: Progreso moderado (50-80%) ===
+        elif 50 <= progreso_pct <= 80:
+            # Comparar progreso vs tiempo
+            if pct_tiempo > 0:
+                diferencia = progreso_pct - pct_tiempo
+                if diferencia > 10:
+                    estado = "adelante del cronograma"
+                    nivel = "excelente"
+                elif diferencia < -10:
+                    estado = "retrasado respecto al cronograma"
+                    nivel = "regular"
+                else:
+                    estado = "en línea con el cronograma"
+                    nivel = "bueno"
+            else:
+                estado = "avanzando"
+                nivel = "bueno"
+
+            insights.append({
+                'tipo': 'meta_progreso_moderado',
+                'titulo': f'Progreso Moderado hacia Meta de {dir_texto.title()}',
+                'descripcion': f"Progreso del {progreso_pct:.1f}% ({estado}). Quedan {dias_restantes} días hasta {indicador.meta_fecha_limite.strftime('%d/%m/%Y')}. Tiempo transcurrido: {pct_tiempo:.1f}% del plazo total.",
+                'nivel': nivel,
+                'icono': 'ki-timer',
+                'accion_recomendada': 'Mantener monitoreo y evaluar aceleración si es necesario',
+                'datos_adicionales': {
+                    'progreso': progreso_pct,
+                    'tiempo_transcurrido': pct_tiempo,
+                    'diferencia': progreso_pct - pct_tiempo if pct_tiempo > 0 else None,
+                    'dias_restantes': dias_restantes,
+                    'fecha_meta': indicador.meta_fecha_limite.strftime('%d/%m/%Y'),
+                    'direccion': indicador.get_direccion_optima_display()
+                }
+            })
+
+        # === CASO 4: Progreso bajo (30-50%) ===
+        elif 30 <= progreso_pct < 50:
+            if dias_restantes < 365:  # Menos de 1 año
+                urgencia = "alta"
+                nivel = "regular"
+                accion = "Acelerar implementación de medidas"
+            else:
+                urgencia = "moderada"
+                nivel = "regular"
+                accion = "Reforzar estrategias actuales"
+
+            insights.append({
+                'tipo': 'meta_progreso_bajo',
+                'titulo': f'Progreso Insuficiente en {dir_texto.title()}',
+                'descripcion': f"Progreso del {progreso_pct:.1f}% con {dias_restantes} días restantes hasta {indicador.meta_fecha_limite.strftime('%d/%m/%Y')}. Urgencia {urgencia}. Se requiere acelerar el ritmo de {dir_texto} para cumplir la meta.",
+                'nivel': nivel,
+                'icono': 'ki-information-3',
+                'accion_recomendada': accion,
+                'datos_adicionales': {
+                    'progreso': progreso_pct,
+                    'dias_restantes': dias_restantes,
+                    'urgencia': urgencia,
+                    'fecha_meta': indicador.meta_fecha_limite.strftime('%d/%m/%Y'),
+                    'direccion': indicador.get_direccion_optima_display()
+                }
+            })
+
+        # === CASO 5: Progreso crítico (<30%) ===
+        else:  # progreso_pct < 30
+            if dias_restantes < 180:  # Menos de 6 meses
                 insights.append({
-                    'tipo': 'meta_cerca',
-                    'titulo': 'Meta Climática al Alcance',
-                    'descripcion': f"Progreso del {progreso_pct:.1f}%. Mantener esfuerzos actuales para alcanzar meta{tiempo_msg}.",
-                    'nivel': 'excelente',
-                    'icono': 'ki-medal-star',
-                    'accion_recomendada': 'Mantener intensidad actual'
+                    'tipo': 'meta_riesgo_alto',
+                    'titulo': 'Riesgo Alto de Incumplimiento de Meta',
+                    'descripcion': f"CRÍTICO: Solo {progreso_pct:.1f}% de progreso en {dir_texto} con {dias_restantes} días restantes (meta: {indicador.meta_fecha_limite.strftime('%d/%m/%Y')}). Se requiere intervención inmediata y replanteo estratégico.",
+                    'nivel': 'critico',
+                    'icono': 'ki-shield-cross',
+                    'accion_recomendada': 'ACCIÓN URGENTE: Convocar comité de crisis y revisar estrategia',
+                    'datos_adicionales': {
+                        'progreso': progreso_pct,
+                        'dias_restantes': dias_restantes,
+                        'brecha': 100 - progreso_pct,
+                        'fecha_meta': indicador.meta_fecha_limite.strftime('%d/%m/%Y'),
+                        'direccion': indicador.get_direccion_optima_display()
+                    }
                 })
-            elif progreso_pct < 30 and indicador.meta_fecha_limite:
-                dias_restantes = (indicador.meta_fecha_limite - timezone.now().date()).days
-                if dias_restantes < 180:  # Menos de 6 meses
-                    insights.append({
-                        'tipo': 'meta_riesgo',
-                        'titulo': 'Riesgo de Incumplimiento de Meta',
-                        'descripcion': f"Solo {progreso_pct:.1f}% de progreso con {dias_restantes} días restantes. Intensificar acciones urgentemente.",
-                        'nivel': 'critico',
-                        'icono': 'ki-shield-cross',
-                        'accion_recomendada': 'Intensificar acciones inmediatamente'
-                    })
+            elif dias_restantes < 365:  # Menos de 1 año
+                insights.append({
+                    'tipo': 'meta_riesgo_medio',
+                    'titulo': 'Riesgo de Incumplimiento de Meta',
+                    'descripcion': f"Progreso del {progreso_pct:.1f}% en {dir_texto} con {dias_restantes} días hasta {indicador.meta_fecha_limite.strftime('%d/%m/%Y')}. Intensificar acciones urgentemente para evitar incumplimiento.",
+                    'nivel': 'critico',
+                    'icono': 'ki-shield-tick',
+                    'accion_recomendada': 'Intensificar acciones y aumentar recursos',
+                    'datos_adicionales': {
+                        'progreso': progreso_pct,
+                        'dias_restantes': dias_restantes,
+                        'brecha': 100 - progreso_pct,
+                        'fecha_meta': indicador.meta_fecha_limite.strftime('%d/%m/%Y'),
+                        'direccion': indicador.get_direccion_optima_display()
+                    }
+                })
+            else:  # Más de 1 año
+                insights.append({
+                    'tipo': 'meta_atencion',
+                    'titulo': 'Progreso Requiere Atención',
+                    'descripcion': f"Progreso del {progreso_pct:.1f}% en {dir_texto}. Aunque quedan {dias_restantes} días hasta {indicador.meta_fecha_limite.strftime('%d/%m/%Y')}, el ritmo actual puede no ser suficiente. Evaluar estrategia.",
+                    'nivel': 'regular',
+                    'icono': 'ki-information-2',
+                    'accion_recomendada': 'Evaluar y ajustar estrategia',
+                    'datos_adicionales': {
+                        'progreso': progreso_pct,
+                        'dias_restantes': dias_restantes,
+                        'fecha_meta': indicador.meta_fecha_limite.strftime('%d/%m/%Y'),
+                        'direccion': indicador.get_direccion_optima_display()
+                    }
+                })
+
+        # === INSIGHT ADICIONAL: Velocidad requerida ===
+        if not meta_alcanzada and dias_restantes > 0:
+            ultimo_resultado = indicador.resultados.order_by('-fecha').first()
+            if ultimo_resultado:
+                valor_actual = ultimo_resultado.valor
+                meta_valor = indicador.meta_valor
+                distancia = abs(meta_valor - valor_actual)
+                velocidad_requerida = (distancia / dias_restantes) * 30  # Por mes
+
+                # Calcular velocidad actual
+                resultados = list(indicador.resultados.order_by('-fecha')[:3])
+                if len(resultados) >= 2:
+                    dias_diff = (resultados[0].fecha - resultados[-1].fecha).days
+                    if dias_diff > 0:
+                        cambio = abs(resultados[0].valor - resultados[-1].valor)
+                        velocidad_actual = (cambio / dias_diff) * 30
+
+                        if velocidad_actual < velocidad_requerida * 0.7:
+                            insights.append({
+                                'tipo': 'velocidad_insuficiente',
+                                'titulo': 'Ritmo de Cambio Insuficiente',
+                                'descripcion': f"Velocidad actual: {velocidad_actual:.2f} unidades/mes. Velocidad requerida para meta: {velocidad_requerida:.2f} unidades/mes. Necesitas aumentar el ritmo en {((velocidad_requerida / velocidad_actual - 1) * 100):.0f}%.",
+                                'nivel': 'regular',
+                                'icono': 'ki-speedometer',
+                                'accion_recomendada': 'Aumentar intensidad de las intervenciones',
+                                'datos_adicionales': {
+                                    'velocidad_actual': round(velocidad_actual, 2),
+                                    'velocidad_requerida': round(velocidad_requerida, 2),
+                                    'direccion': indicador.get_direccion_optima_display()
+                                }
+                            })
 
         return insights
 
@@ -733,46 +995,53 @@ class InsightGeneratorService:
                     'titulo': 'Oportunidad de Mejora Identificada',
                     'descripcion': f"Rendimiento actual por debajo del potencial histórico. Revisar mejores prácticas de períodos exitosos.",
                     'nivel': 'bueno',
-                    'icono': 'ki-chart-simple',
-                    'accion_recomendada': 'Analizar períodos de mejor rendimiento'
+                    'icono': 'ki-chart-line-star',
+                    'accion_recomendada': 'Análisis de mejores prácticas históricas'
                 })
 
         return insights
 
     @staticmethod
     def generate_executive_summary(object_list, statistics, variations, indicador):
-        """Genera un resumen ejecutivo para tomadores de decisiones"""
+        """Genera resumen ejecutivo del indicador"""
         if not object_list.exists():
-            return None
+            return "Sin datos suficientes para generar resumen."
 
-        ultimo_valor = object_list.last().valor
-        variacion_total = variations.get('variacion_porcentual', 0)
-        efectividad = statistics.get('efectividad', {}).get('nivel', 'desconocida')
+        ultimo_resultado = object_list.last()
+        efectividad = statistics.get('efectividad', {})
+        progreso_meta = indicador.calcular_progreso_meta()
 
-        # Determinar estado general
-        if efectividad == 'alta' and variacion_total > 10:
-            estado = "EXCELENTE"
-            color = "success"
-            recomendacion = "Mantener y escalar estrategia actual"
-        elif efectividad == 'media' or (efectividad == 'alta' and abs(variacion_total) < 10):
-            estado = "BUENO"
-            color = "primary"
-            recomendacion = "Optimizar para maximizar impacto"
-        elif efectividad == 'baja' or variacion_total < -10:
-            estado = "REQUIERE ATENCIÓN"
-            color = "warning"
-            recomendacion = "Revisar y reformular estrategia"
+        # Construir mensaje principal
+        if progreso_meta and progreso_meta.get('meta_alcanzada'):
+            mensaje = f"Meta alcanzada exitosamente con {progreso_meta['progreso_porcentaje']:.1f}% de cumplimiento."
+        elif progreso_meta:
+            mensaje = f"Progreso del {progreso_meta['progreso_porcentaje']:.1f}% hacia la meta."
         else:
-            estado = "CRÍTICO"
-            color = "danger"
-            recomendacion = "Intervención urgente necesaria"
+            mensaje = f"Valor actual: {ultimo_resultado.valor:.2f} {indicador.unidad_medida.nombre if indicador.unidad_medida else ''}."
+
+        # Agregar contexto de efectividad
+        if efectividad.get('nivel') == 'alta':
+            mensaje += f" {efectividad.get('descripcion', '')}."
+        elif efectividad.get('nivel') == 'negativa':
+            mensaje += " Se requiere revisión urgente de la estrategia."
+
+        # Recomendación principal
+        velocidad = statistics.get('velocidad_mensual', 0)
+        if abs(velocidad) > 5:
+            if velocidad > 0 and indicador.direccion_optima == 'incremento':
+                recomendacion = "Mantener momentum positivo actual."
+            elif velocidad < 0 and indicador.direccion_optima == 'decremento':
+                recomendacion = "Mantener momentum positivo actual."
+            else:
+                recomendacion = "Ajustar estrategia para corregir tendencia."
+        elif progreso_meta and progreso_meta['progreso_porcentaje'] < 50:
+            recomendacion = "Intensificar acciones para alcanzar la meta."
+        else:
+            recomendacion = "Continuar con estrategia actual."
 
         return {
-            'estado_general': estado,
-            'color': color,
-            'valor_actual': ultimo_valor,
-            'variacion_total': variacion_total,
-            'efectividad': efectividad,
+            'mensaje_principal': mensaje,
+            'efectividad': efectividad.get('nivel', 'N/A'),
             'recomendacion_principal': recomendacion,
             'fecha_ultima_medicion': object_list.last().fecha,
             'total_mediciones': object_list.count()

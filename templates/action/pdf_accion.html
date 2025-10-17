@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Acción - {{ accion.nombre }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .portada {
+            page-break-after: always;
+            text-align: center;
+            padding-top: 200px;
+        }
+
+        .portada .logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #10b981, #3b82f6);
+            border-radius: 50%;
+            margin: 0 auto 40px;
+        }
+
+        .portada h1 {
+            font-size: 36px;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+
+        .portada h2 {
+            font-size: 24px;
+            color: #4b5563;
+            margin-bottom: 40px;
+            padding: 0 50px;
+        }
+
+        .portada .info {
+            font-size: 16px;
+            color: #6b7280;
+            margin-top: 60px;
+        }
+
+        .seccion {
+            page-break-before: always;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            font-size: 28px;
+            color: #1f2937;
+            border-bottom: 4px solid #10b981;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 20px;
+            color: #1f2937;
+            margin: 25px 0 15px 0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .card-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+
+        .card-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .destacado {
+            background: linear-gradient(135deg, #dbeafe, #d1fae5);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tabla {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .tabla thead {
+            background: #f3f4f6;
+        }
+
+        .tabla th,
+        .tabla td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .tabla th {
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .tabla tr:hover {
+            background: #f9fafb;
+        }
+
+        .insight {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+        }
+
+        .insight-success {
+            background: #d1fae5;
+            border-color: #10b981;
+        }
+
+        .insight-warning {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+
+        .insight-info {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+
+        .insight h4 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .grafico {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .grafico img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .metrica-grande {
+            background: linear-gradient(135deg, #dbeafe, #d1fae5);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .metrica-grande .valor {
+            font-size: 48px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .metrica-grande .label {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- PORTADA -->
+    <div class="portada">
+        <div class="logo"></div>
+        <h1>REPORTE DE ACCIÓN</h1>
+        <h2>{{ accion.nombre }}</h2>
+        <div class="info">
+            <p><strong>Sector:</strong> {{ accion.sector }}</p>
+            <p><strong>Período:</strong> {{ accion.fecha_inicio|date:"d/m/Y" }} - {{ accion.fecha_fin|date:"d/m/Y" }}</p>
+            <p><strong>Estado:</strong> {{ accion.estado }}</p>
+            <p style="margin-top: 40px;">Generado el {{ fecha_generacion }}</p>
+            <p>{{ accion.entidad_responsable }}</p>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 1: DETALLES DE LA ACCIÓN -->
+    <div class="seccion">
+        <h2>1. Detalles de la Acción</h2>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-label">Tipo de Acción</div>
+                <div class="card-value">{{ accion.tipo }}</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Estado</div>
+                <div class="card-value">{{ accion.estado }}</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Objetivo</div>
+                <div class="card-value">{{ accion.objetivo }}</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Meta</div>
+                <div class="card-value">{{ accion.meta }}</div>
+            </div>
+        </div>
+
+        <div class="destacado">
+            <h3>Descripción</h3>
+            <p>{{ accion.descripcion }}</p>
+        </div>
+
+        <div class="grid-2">
+            <div>
+                <p><strong>Sector:</strong> {{ accion.sector }}</p>
+                <p><strong>Escenario:</strong> {{ accion.escenario }}</p>
+            </div>
+            <div>
+                <p><strong>Alcance:</strong> {{ accion.alcance }}</p>
+                <p><strong>Escala:</strong> {{ accion.escala }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 2: PRESUPUESTO -->
+    <div class="seccion">
+        <h2>2. Análisis Presupuestario</h2>
+
+        <div class="grid-2">
+            <div class="metrica-grande">
+                <div class="valor">${{ estadisticas.total_planificado|floatformat:0 }}</div>
+                <div class="label">Presupuesto Total Planificado</div>
+            </div>
+            <div class="metrica-grande">
+                <div class="valor">${{ estadisticas.total_ejecutado|floatformat:0 }}</div>
+                <div class="label">Total Ejecutado</div>
+            </div>
+        </div>
+
+        {% if graficos.presupuesto_comparacion %}
+        <div class="grafico">
+            <h3>Ejecución por Fuente de Financiamiento</h3>
+            <img src="{{ graficos.presupuesto_comparacion }}" alt="Gráfico de Presupuesto">
+        </div>
+        {% endif %}
+
+        {% if graficos.estados_pie %}
+        <div class="grafico">
+            <h3>Distribución por Estado</h3>
+            <img src="{{ graficos.estados_pie }}" alt="Gráfico de Estados">
+        </div>
+        {% endif %}
+
+        <h3>Desglose Detallado de Financiamientos</h3>
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th>Fuente</th>
+                    <th>Moneda</th>
+                    <th>Monto</th>
+                    <th>Ejecutado</th>
+                    <th>Restante</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in accion.financiamientos.all %}
+                <tr>
+                    <td>{{ f.fuente }}</td>
+                    <td>{{ f.moneda }}</td>
+                    <td>{{ f.monto|floatformat:2 }}</td>
+                    <td><strong>{{ f.monto_ejecutado|floatformat:2 }}</strong></td>
+                    <td>{{ f.monto_restante|floatformat:2 }}</td>
+                    <td><span class="badge badge-info">{{ f.estado }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SECCIÓN 3: INDICADORES -->
+    <div class="seccion">
+        <h2>3. Indicadores y Resultados</h2>
+
+        {% for indicador in accion.indicadores.all %}
+        <div style="margin-bottom: 40px;">
+            <h3>{{ indicador.nombre }}</h3>
+
+            <div class="grid-2" style="margin-bottom: 20px;">
+                <div>
+                    <p><strong>Fuente:</strong> {{ indicador.fuente }}</p>
+                    <p><strong>Tipo:</strong> {{ indicador.tipo }}</p>
+                </div>
+                <div>
+                    <p><strong>Fórmula:</strong> {{ indicador.formula }}</p>
+                    <p><strong>Frecuencia:</strong> {{ indicador.frecuencia }}</p>
+                </div>
+            </div>
+
+            <div class="grid-4">
+                <div class="card" style="background: #dbeafe;">
+                    <div class="card-label">Valor Inicial</div>
+                    <div class="card-value">{{ indicador.valor_inicial }} {{ indicador.unidad }}</div>
+                    <small>{{ indicador.fecha_inicial|date:"d/m/Y" }}</small>
+                </div>
+                <div class="card" style="background: #d1fae5;">
+                    <div class="card-label">Valor Final</div>
+                    <div class="card-value">{{ indicador.valor_final }} {{ indicador.unidad }}</div>
+                    <small>{{ indicador.fecha_final|date:"d/m/Y" }}</small>
+                </div>
+                <div class="card" style="background: #fee2e2;">
+                    <div class="card-label">Variación</div>
+                    <div class="card-value">{{ indicador.variacion_porcentual|floatformat:1 }}%</div>
+                    <small>{{ indicador.variacion_numerica|floatformat:2 }} {{ indicador.unidad }}</small>
+                </div>
+                <div class="card" style="background: #fef3c7;">
+                    <div class="card-label">Promedio</div>
+                    <div class="card-value">{{ indicador.promedio|floatformat:2 }}</div>
+                    <small>{{ indicador.mediciones.count }} mediciones</small>
+                </div>
+            </div>
+
+            {% if graficos|get_item:forloop.counter0 %}
+            <div class="grafico">
+                <img src="{{ graficos|get_item:forloop.counter0 }}" alt="Evolución del Indicador">
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- SECCIÓN 4: INSIGHTS -->
+    <div class="seccion">
+        <h2>4. Insights y Análisis</h2>
+
+        {% for insight in insights %}
+        <div class="insight insight-{{ insight.tipo }}">
+            <h4>{{ insight.titulo }}</h4>
+            <p>{{ insight.mensaje }}</p>
+        </div>
+        {% endfor %}
+
+        <div class="destacado" style="margin-top: 30px;">
+            <h3>Resumen Ejecutivo</h3>
+            <p style="margin-bottom: 15px;">
+                El proyecto "{{ accion.nombre }}" ha demostrado un impacto significativo en el sector {{ accion.sector }}.
+                Con un presupuesto total de ${{ estadisticas.total_planificado|floatformat:0 }}, se ha ejecutado
+                el {{ estadisticas.total_ejecutado|floatformat:0 }} hasta la fecha.
+            </p>
+            <p>
+                El proyecto se ejecutó exitosamente entre {{ accion.fecha_inicio|date:"d/m/Y" }} y
+                {{ accion.fecha_fin|date:"d/m/Y" }}, cumpliendo con los objetivos establecidos en el marco del
+                programa {{ accion.programa }}.
+            </p>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 5: COBENEFICIOS -->
+    <div class="seccion">
+        <h2>5. Cobeneficios</h2>
+
+        {% for cobeneficio in accion.cobeneficios.all %}
+        <div class="destacado" style="background: #d1fae5;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">{{ cobeneficio.nombre }}</h3>
+                {% if cobeneficio.cumplimiento %}
+                <span class="badge badge-success">✓ Cumplido</span>
+                {% else %}
+                <span class="badge badge-warning">✗ No Cumplido</span>
+                {% endif %}
+            </div>
+            <p>{{ cobeneficio.descripcion }}</p>
+        </div>
+        {% endfor %}
+
+        <div class="footer">
+            <p>Este reporte fue generado automáticamente el {{ fecha_generacion }}</p>
+            <p style="margin-top: 5px;">{{ accion.entidad_responsable }}</p>
+            <p style="margin-top: 15px; font-weight: bold;">Documento Oficial - Confidencial</p>
+        </div>
+    </div>
+</body>
+</html>

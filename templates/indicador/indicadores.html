@@ -163,8 +163,7 @@
                                                 este indicador?.</p>
                                         </div>
                                         <form method="post" id="form_delete"
-                                              action="#">
-                                            {#                                              action="{% url 'adaptacion:eliminar_indicador_accion_adaptacion' accion.id i.id %}">#}
+{#                                              action="#">#} action="{% url 'registro:eliminar_indicador' accion.id i.id %}">
                                             {% csrf_token %}
                                             <div class="modal-footer">
                                                 <button type="button"

@@ -1,6 +1,10 @@
+import base64
 import datetime
+import io
 import json
 import re
+import matplotlib
+matplotlib.use('Agg')
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 from django.core.serializers.json import DjangoJSONEncoder
@@ -20,6 +24,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DetailView, DeleteView, FormView
+from matplotlib import pyplot as plt
 from sympy import sympify, Symbol
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
@@ -1844,7 +1849,7 @@ class ResultadosIndicadorListView(LoginRequiredMixin, PermissionRequiredMixin,
 
         for resultado in object_list:
             fechas.append(resultado.fecha.strftime("%d-%m-%Y"))
-            valores.append(float(resultado.valor))
+            valores.append(round(float(resultado.valor),2))
 
             # Calcular progreso según dirección
             if self.indicador.direccion_optima == 'incremento':
@@ -1889,7 +1894,7 @@ class ResultadosIndicadorListView(LoginRequiredMixin, PermissionRequiredMixin,
                 'toolbar': {'show': 'true'}
             },
             'title': {
-                'text': 'Evolución hacia la Meta Climática',
+                'text': '',
                 'style': {
                     'fontSize': '18px',
                     'fontWeight': 'bold',
@@ -2017,7 +2022,7 @@ class ResultadosIndicadorListView(LoginRequiredMixin, PermissionRequiredMixin,
                 }
             },
             'title': {
-                'text': f'Comparación de Indicadores - {self.accion.nombre}',
+                'text': '',
                 'style': {
                     'fontSize': '18px',
                     'fontWeight': 'bold',
@@ -3077,7 +3082,7 @@ def generar_reporte_accion_completo(request, id_accion):
 
     # Respuesta
     response = HttpResponse(pdf_content, content_type='application/pdf')
-    filename = f'reporte_accion_{accion.id}_{datetime.now().strftime("%Y%m%d")}.pdf'
+    filename = f'reporte_accion_{accion.id}_{datetime.datetime.now().strftime("%Y%m%d")}.pdf'
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
     return response
