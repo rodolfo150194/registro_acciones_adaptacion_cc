@@ -1,6 +1,6 @@
 from django.urls import path
 
-from registro.views import HomeView, ActionListView, ActionCreateView, ActionUpdateView, DetailtsActionUpdateView, \
+from registro.views import LandingView, HomeView, ActionListView, ActionCreateView, ActionUpdateView, DetailtsActionUpdateView, \
     PresupuestoPlanificadoListView, PresupuestoPlanificadoCreateView, PresupuestoPlanificadoUpdateView, \
     eliminar_presupuesto_planificado, \
     PresupuestoEjecutadoView, PresupuestoEjecutadoUpdateView, eliminar_presupuesto_ejecutado, IndicadoresListView, \
@@ -13,7 +13,11 @@ from registro.views import HomeView, ActionListView, ActionCreateView, ActionUpd
 app_name = 'registro'
 
 urlpatterns = [
-    path('', HomeView.as_view(), name='home'),
+    # Landing page pública
+    path('', LandingView.as_view(), name='landing'),
+
+    # Dashboard (requiere autenticación)
+    path('dashboard/', HomeView.as_view(), name='home'),
 
     # Accion
     path('acciones/', ActionListView.as_view(), name='lista_accion'),

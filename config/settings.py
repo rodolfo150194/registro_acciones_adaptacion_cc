@@ -153,8 +153,8 @@ MESSAGE_TAGS = {
     messages.SUCCESS: 'success'
 }
 MAX_UPLOAD_SIZE = 2 * 1024 * 1024  # 2MB
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/accounts/login'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
 # settings.py
 USE_I18N_CACHE = True
 # Habilitar internacionalización

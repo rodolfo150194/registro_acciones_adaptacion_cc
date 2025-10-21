@@ -45,7 +45,13 @@ from registro.utils import data_chart_donut, data_chart_line
 
 # Create your views here.
 
+class LandingView(TemplateView):
+    """Vista pública de la landing page"""
+    template_name = 'landing.html'
+
+
 class HomeView(LoginRequiredMixin, TemplateView):
+    """Vista del dashboard principal (requiere autenticación)"""
     template_name = 'dashboard.html'
 
     def get(self, request, *args, **kwargs):
