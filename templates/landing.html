@@ -11,607 +11,795 @@
     <link href="{% static 'assets/media/logos/custom-1.png' %}" rel="icon">
 
     <!-- Fonts -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700"/>
 
-    <!-- Bootstrap CSS -->
+    <!-- Theme Styles -->
     <link href="{% static 'assets/plugins/global/plugins.bundle.css' %}" rel="stylesheet" type="text/css"/>
+    <link href="{% static 'assets/css/style.bundle.css' %}" rel="stylesheet" type="text/css"/>
 
-    <!-- Custom Styles -->
     <style>
         :root {
-            --primary-color: #1e88e5;
-            --secondary-color: #43a047;
-            --accent-color: #ff6f00;
-            --dark-color: #1a237e;
-            --light-bg: #f5f7fa;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            --landing-primary: #3E97FF;
+            --landing-success: #50CD89;
+            --landing-warning: #FFC700;
+            --landing-danger: #F1416C;
+            --landing-info: #7239EA;
+            --landing-dark: #181C32;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            color: #333;
-            line-height: 1.6;
-            overflow-x: hidden;
+            background: #fff;
         }
 
-        /* Navbar */
-        .navbar {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-            padding: 1rem 0;
+        /* Navbar flotante */
+        .landing-header {
             position: fixed;
-            width: 100%;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1000;
-            transition: all 0.3s ease;
-        }
-
-        .navbar.scrolled {
-            padding: 0.5rem 0;
-            box-shadow: 0 2px 30px rgba(0,0,0,0.15);
-        }
-
-        .navbar-brand {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .navbar-brand img {
-            height: 40px;
-        }
-
-        .nav-link {
-            color: #333 !important;
-            font-weight: 500;
-            margin: 0 1rem;
-            transition: color 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: var(--primary-color) !important;
-        }
-
-        .btn-primary-custom {
-            background: linear-gradient(135deg, var(--primary-color), #1565c0);
-            border: none;
-            color: white;
-            padding: 0.75rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(30, 136, 229, 0.3);
-        }
-
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(30, 136, 229, 0.4);
-            background: linear-gradient(135deg, #1565c0, var(--primary-color));
-        }
-
-        .btn-outline-custom {
-            border: 2px solid var(--primary-color);
-            color: var(--primary-color);
-            padding: 0.75rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
             transition: all 0.3s ease;
             background: transparent;
         }
 
-        .btn-outline-custom:hover {
-            background: var(--primary-color);
-            color: white;
-            transform: translateY(-2px);
+        .landing-header.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px 0 rgba(82, 63, 105, 0.05);
         }
 
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 180px 0 120px;
-            position: relative;
-            overflow: hidden;
+        .landing-header .container-xxl {
+            padding: 1.5rem 2rem;
         }
 
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            opacity: 0.3;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            color: white;
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 1.5rem;
-            line-height: 1.2;
-            animation: fadeInUp 1s ease;
-        }
-
-        .hero p {
-            font-size: 1.3rem;
-            margin-bottom: 2.5rem;
-            opacity: 0.95;
-            animation: fadeInUp 1s ease 0.2s;
-            animation-fill-mode: backwards;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 1.5rem;
-            animation: fadeInUp 1s ease 0.4s;
-            animation-fill-mode: backwards;
-        }
-
-        .hero-image {
-            position: relative;
-            animation: fadeInRight 1s ease 0.6s;
-            animation-fill-mode: backwards;
-        }
-
-        .hero-image img {
-            max-width: 100%;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        /* Features Section */
-        .features {
-            padding: 100px 0;
-            background: var(--light-bg);
-        }
-
-        .section-title {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .section-title h2 {
-            font-size: 2.8rem;
+        .landing-logo {
+            font-size: 1.75rem;
             font-weight: 700;
-            color: var(--dark-color);
-            margin-bottom: 1rem;
-        }
-
-        .section-title p {
-            font-size: 1.2rem;
-            color: #666;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .feature-card {
-            background: white;
-            border-radius: 20px;
-            padding: 2.5rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            height: 100%;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-        }
-
-        .feature-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 20px;
+            color: var(--landing-dark);
+            text-decoration: none;
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            font-size: 2.5rem;
-            color: white;
+            gap: 0.75rem;
         }
 
-        .feature-icon.blue {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+        .landing-logo img {
+            height: 45px;
+            transition: transform 0.3s ease;
         }
 
-        .feature-icon.green {
-            background: linear-gradient(135deg, #43a047, #66bb6a);
+        .landing-logo:hover img {
+            transform: scale(1.05) rotate(5deg);
         }
 
-        .feature-icon.orange {
-            background: linear-gradient(135deg, #ff6f00, #ff8f00);
+        /* Hero Section - Diseño moderno con fondo degradado */
+        .landing-hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(180deg, #F5F8FA 0%, #FFFFFF 100%);
+            overflow: hidden;
+            padding-top: 100px;
         }
 
-        .feature-icon.purple {
-            background: linear-gradient(135deg, #8e24aa, #ab47bc);
+        .landing-hero::before {
+            content: '';
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(62, 151, 255, 0.15) 0%, rgba(62, 151, 255, 0) 70%);
+            top: -200px;
+            right: -200px;
+            border-radius: 50%;
+            animation: pulse 8s ease-in-out infinite;
         }
 
-        .feature-icon.teal {
-            background: linear-gradient(135deg, #00897b, #26a69a);
+        .landing-hero::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(80, 205, 137, 0.1) 0%, rgba(80, 205, 137, 0) 70%);
+            bottom: -150px;
+            left: -150px;
+            border-radius: 50%;
+            animation: pulse 6s ease-in-out infinite reverse;
         }
 
-        .feature-icon.red {
-            background: linear-gradient(135deg, #e53935, #ef5350);
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
         }
 
-        .feature-card h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--dark-color);
+        .landing-hero-content {
+            position: relative;
+            z-index: 2;
         }
 
-        .feature-card p {
-            color: #666;
-            line-height: 1.8;
-        }
-
-        /* Stats Section */
-        .stats {
-            background: linear-gradient(135deg, var(--dark-color), #283593);
-            padding: 80px 0;
-            color: white;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .stat-number {
-            font-size: 3.5rem;
+        .landing-hero h1 {
+            font-size: 4rem;
             font-weight: 800;
-            display: block;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #fff, #e3f2fd);
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--landing-info) 0%, var(--landing-primary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .stat-label {
-            font-size: 1.1rem;
-            opacity: 0.9;
+        .landing-hero .subtitle {
+            font-size: 1.5rem;
+            color: #5E6278;
+            line-height: 1.8;
+            margin-bottom: 3rem;
+            font-weight: 500;
         }
 
-        /* Benefits Section */
-        .benefits {
-            padding: 100px 0;
+        .landing-hero .highlight {
+            color: var(--landing-primary);
+            font-weight: 700;
         }
 
-        .benefit-item {
-            display: flex;
-            align-items: start;
-            margin-bottom: 2.5rem;
-            padding: 2rem;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
-
-        .benefit-item:hover {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transform: translateX(10px);
-        }
-
-        .benefit-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary-color), #1565c0);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* Botones mejorados */
+        .btn-landing-primary {
+            background: linear-gradient(135deg, var(--landing-info) 0%, var(--landing-primary) 100%);
             color: white;
-            font-size: 1.8rem;
-            flex-shrink: 0;
-            margin-right: 1.5rem;
-        }
-
-        .benefit-content h4 {
-            font-size: 1.3rem;
+            padding: 1.25rem 3rem;
+            font-size: 1.125rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--dark-color);
-        }
-
-        .benefit-content p {
-            color: #666;
-            margin: 0;
-        }
-
-        /* CTA Section */
-        .cta {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 100px 0;
-            color: white;
-            text-align: center;
+            border: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(114, 57, 234, 0.25);
             position: relative;
             overflow: hidden;
         }
 
-        .cta::before {
+        .btn-landing-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-landing-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-landing-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px rgba(114, 57, 234, 0.35);
+        }
+
+        .btn-landing-outline {
+            background: transparent;
+            color: var(--landing-info);
+            padding: 1.25rem 3rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            border: 2px solid var(--landing-info);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-landing-outline:hover {
+            background: var(--landing-info);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(114, 57, 234, 0.25);
+        }
+
+        /* Hero Image con efecto flotante */
+        .landing-hero-image {
+            position: relative;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .landing-hero-badge {
+            background: white;
+            border-radius: 50px;
+            padding: 0.75rem 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            animation: slideInDown 1s ease;
+        }
+
+        @keyframes slideInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Features con cards modernas */
+        .landing-features {
+            padding: 120px 0;
+            background: white;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .section-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(114, 57, 234, 0.1);
+            color: var(--landing-info);
+            padding: 0.5rem 1.25rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--landing-dark);
+            margin-bottom: 1.25rem;
+        }
+
+        .section-description {
+            font-size: 1.25rem;
+            color: #7E8299;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            height: 100%;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #E4E6EF;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-color), transparent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            border-color: transparent;
+        }
+
+        .feature-icon-wrapper {
+            width: 90px;
+            height: 90px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            background: var(--card-bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-icon-wrapper::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--card-color);
+            opacity: 0.1;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon-wrapper::before {
             opacity: 0.2;
         }
 
-        .cta-content {
+        .feature-icon-wrapper i {
+            font-size: 2.5rem;
+            color: var(--card-color);
             position: relative;
             z-index: 1;
         }
 
-        .cta h2 {
-            font-size: 3rem;
+        .feature-card h3 {
+            font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 1.5rem;
+            color: var(--landing-dark);
+            margin-bottom: 1rem;
         }
 
-        .cta p {
-            font-size: 1.3rem;
-            margin-bottom: 2.5rem;
-            opacity: 0.95;
+        .feature-card p {
+            color: #7E8299;
+            line-height: 1.8;
+            font-size: 1rem;
+            margin: 0;
         }
 
-        .btn-white {
-            background: white;
-            color: var(--primary-color);
-            padding: 1rem 3rem;
-            border-radius: 50px;
+        /* Stats Section */
+        .landing-stats {
+            background: linear-gradient(135deg, #1E1E2D 0%, #2D2D3F 100%);
+            padding: 100px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .landing-stats::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .stat-number {
+            font-size: 4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3E97FF 0%, #50CD89 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            color: #A1A5B7;
+            font-size: 1.125rem;
             font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .btn-white:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-            color: var(--primary-color);
+        .stat-description {
+            color: #7E8299;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Benefits Section */
+        .landing-benefits {
+            padding: 120px 0;
+            background: linear-gradient(180deg, #FFFFFF 0%, #F5F8FA 100%);
+        }
+
+        .benefit-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #E4E6EF;
+            transition: all 0.3s ease;
+            display: flex;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .benefit-card:hover {
+            transform: translateX(10px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.06);
+            border-color: var(--landing-primary);
+        }
+
+        .benefit-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--landing-info), var(--landing-primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .benefit-icon i {
+            font-size: 2rem;
+            color: white;
+        }
+
+        .benefit-content h4 {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: var(--landing-dark);
+            margin-bottom: 0.75rem;
+        }
+
+        .benefit-content p {
+            color: #7E8299;
+            line-height: 1.8;
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        /* CTA Section */
+        .landing-cta {
+            padding: 120px 0;
+            background: linear-gradient(135deg, #7239EA 0%, #3E97FF 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .landing-cta::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            top: -100px;
+            right: -100px;
+            border-radius: 50%;
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+        }
+
+        .cta-content h2 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .cta-content p {
+            font-size: 1.375rem;
+            margin-bottom: 3rem;
+            opacity: 0.95;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn-landing-white {
+            background: white;
+            color: var(--landing-info);
+            padding: 1.25rem 3rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-landing-white:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            color: var(--landing-info);
         }
 
         /* Footer */
-        .footer {
-            background: #1a1a2e;
-            color: white;
-            padding: 60px 0 30px;
+        .landing-footer {
+            background: #1E1E2D;
+            color: #A1A5B7;
+            padding: 80px 0 40px;
         }
 
-        .footer h5 {
-            font-weight: 600;
+        .footer-section h5 {
+            color: white;
+            font-weight: 700;
             margin-bottom: 1.5rem;
+            font-size: 1.125rem;
         }
 
         .footer-links {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
 
         .footer-links li {
-            margin-bottom: 0.8rem;
+            margin-bottom: 1rem;
         }
 
         .footer-links a {
-            color: rgba(255,255,255,0.7);
+            color: #A1A5B7;
             text-decoration: none;
-            transition: color 0.3s ease;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .footer-links a:hover {
-            color: white;
+            color: var(--landing-primary);
+            transform: translateX(5px);
         }
 
         .footer-bottom {
-            border-top: 1px solid rgba(255,255,255,0.1);
-            margin-top: 3rem;
+            border-top: 1px solid rgba(161, 165, 183, 0.1);
+            margin-top: 4rem;
             padding-top: 2rem;
             text-align: center;
-            color: rgba(255,255,255,0.6);
         }
 
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
         }
 
-        @keyframes fadeInRight {
-            from {
-                opacity: 0;
-                transform: translateX(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+        .social-link {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #A1A5B7;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .social-link:hover {
+            background: var(--landing-primary);
+            color: white;
+            transform: translateY(-3px);
         }
 
         /* Responsive */
+        @media (max-width: 992px) {
+            .landing-hero h1 { font-size: 3rem; }
+            .landing-hero .subtitle { font-size: 1.25rem; }
+            .section-title { font-size: 2.25rem; }
+            .cta-content h2 { font-size: 2.5rem; }
+            .benefit-card { flex-direction: column; text-align: center; }
+            .benefit-icon { margin: 0 auto; }
+        }
+
         @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
+            .landing-hero h1 { font-size: 2.25rem; }
+            .landing-hero .subtitle { font-size: 1.125rem; }
+            .section-title { font-size: 1.875rem; }
+            .stat-number { font-size: 3rem; }
+            .btn-landing-primary, .btn-landing-outline, .btn-landing-white {
+                padding: 1rem 2rem;
+                font-size: 1rem;
             }
+        }
 
-            .hero p {
-                font-size: 1.1rem;
-            }
+        /* Scroll reveal animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-            .hero-buttons {
-                flex-direction: column;
-            }
-
-            .section-title h2 {
-                font-size: 2rem;
-            }
-
-            .stat-number {
-                font-size: 2.5rem;
-            }
-
-            .cta h2 {
-                font-size: 2rem;
-            }
-
-            .benefit-item {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .benefit-icon {
-                margin: 0 auto 1rem;
-            }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center w-100">
-                <a class="navbar-brand" href="#">
-                    <img src="{% static 'assets/media/logos/custom-1.png' %}" alt="Readapt Logo">
-                    Readapt
+
+    <!-- Header -->
+    <header class="landing-header" id="landing-header">
+        <div class="container-xxl">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="#" class="landing-logo">
+                    <img src="{% static 'assets/media/logos/custom-1.png' %}" alt="Readapt">
+                    <span>Readapt</span>
                 </a>
                 <div class="d-flex align-items-center gap-3">
-                    <a href="#features" class="nav-link d-none d-md-inline">Características</a>
-                    <a href="#benefits" class="nav-link d-none d-md-inline">Beneficios</a>
-                    <a href="{% url 'account_login' %}" class="btn btn-outline-custom">Iniciar Sesión</a>
-                    <a href="{% url 'account_signup' %}" class="btn btn-primary-custom">Registrarse</a>
+                    <a href="#caracteristicas" class="text-gray-700 fw-semibold text-hover-primary d-none d-lg-inline">Características</a>
+                    <a href="#beneficios" class="text-gray-700 fw-semibold text-hover-primary d-none d-lg-inline">Beneficios</a>
+                    <a href="{% url 'account_login' %}" class="btn btn-sm btn-light-primary fw-bold">Iniciar Sesión</a>
+                    <a href="{% url 'account_signup' %}" class="btn btn-sm btn-primary fw-bold">Registrarse</a>
                 </div>
             </div>
         </div>
-    </nav>
+    </header>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6 hero-content">
-                    <h1>Gestiona las Acciones de Adaptación al Cambio Climático</h1>
-                    <p>Plataforma integral para el registro, seguimiento y análisis de acciones de adaptación. Toma decisiones informadas con datos en tiempo real.</p>
-                    <div class="hero-buttons">
-                        <a href="{% url 'account_signup' %}" class="btn btn-primary-custom">Comenzar Ahora</a>
-                        <a href="#features" class="btn btn-outline-custom">Conocer Más</a>
+    <section class="landing-hero" id="inicio">
+        <div class="container-xxl">
+            <div class="row align-items-center g-5 g-xl-10">
+                <div class="col-lg-6 landing-hero-content">
+                    <div class="landing-hero-badge">
+                        <span class="badge badge-circle badge-primary pulse pulse-primary">
+                            <span class="pulse-ring"></span>
+                        </span>
+                        <span class="fw-bold text-gray-800">Plataforma Líder en Adaptación Climática</span>
+                    </div>
+
+                    <h1>Gestiona la <span class="highlight">Adaptación</span> al Cambio Climático</h1>
+
+                    <p class="subtitle">
+                        Transforma datos en decisiones inteligentes. Monitorea, analiza y optimiza
+                        tus proyectos de adaptación con tecnología de vanguardia.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-4 mb-8">
+                        <a href="{% url 'account_signup' %}" class="btn btn-landing-primary">
+                            Comenzar Ahora
+                            <i class="ki-outline ki-arrow-right fs-3 ms-2"></i>
+                        </a>
+                        <a href="#caracteristicas" class="btn btn-landing-outline">
+                            Explorar Características
+                        </a>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-5 flex-wrap">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ki-outline ki-verify fs-2x text-success"></i>
+                            <div>
+                                <div class="fw-bold text-gray-800">100% Seguro</div>
+                                <div class="text-gray-600 fs-7">Datos protegidos</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ki-outline ki-chart-simple-3 fs-2x text-primary"></i>
+                            <div>
+                                <div class="fw-bold text-gray-800">Análisis AI</div>
+                                <div class="text-gray-600 fs-7">Inteligencia Artificial</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ki-outline ki-like fs-2x text-warning"></i>
+                            <div>
+                                <div class="fw-bold text-gray-800">Fácil de Usar</div>
+                                <div class="text-gray-600 fs-7">Interfaz intuitiva</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-6 hero-image d-none d-lg-block">
-                    <svg viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:rgb(102,126,234);stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:rgb(118,75,162);stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                        <!-- Earth -->
-                        <circle cx="250" cy="200" r="120" fill="#4CAF50" opacity="0.8"/>
-                        <circle cx="250" cy="200" r="120" fill="url(#grad1)" opacity="0.3"/>
-                        <!-- Leaves -->
-                        <ellipse cx="200" cy="150" rx="30" ry="50" fill="#66BB6A" transform="rotate(-20 200 150)"/>
-                        <ellipse cx="300" cy="150" rx="30" ry="50" fill="#81C784" transform="rotate(20 300 150)"/>
-                        <ellipse cx="250" cy="120" rx="35" ry="55" fill="#4CAF50"/>
-                        <!-- Data points -->
-                        <circle cx="150" cy="200" r="8" fill="white" opacity="0.9"/>
-                        <circle cx="350" cy="200" r="8" fill="white" opacity="0.9"/>
-                        <circle cx="250" cy="300" r="8" fill="white" opacity="0.9"/>
-                        <!-- Connecting lines -->
-                        <line x1="150" y1="200" x2="250" y2="300" stroke="white" stroke-width="2" opacity="0.5"/>
-                        <line x1="350" y1="200" x2="250" y2="300" stroke="white" stroke-width="2" opacity="0.5"/>
-                        <line x1="150" y1="200" x2="350" y2="200" stroke="white" stroke-width="2" opacity="0.5"/>
-                    </svg>
+
+                <div class="col-lg-6 d-none d-lg-block">
+                    <div class="landing-hero-image">
+                        <div class="card shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                            <div class="card-body p-0">
+                                <!-- Illustration with Metronic style -->
+                                <div class="bg-light-primary p-15 text-center">
+                                    <i class="ki-outline ki-abstract-26 text-primary" style="font-size: 15rem; opacity: 0.1;"></i>
+                                    <div class="position-absolute top-50 start-50 translate-middle">
+                                        <div class="mb-5">
+                                            <i class="ki-outline ki-chart-line-up text-primary" style="font-size: 8rem;"></i>
+                                        </div>
+                                        <div class="d-flex gap-3 justify-content-center">
+                                            <div class="badge badge-lg badge-light-success fw-bold p-4">
+                                                <i class="ki-outline ki-arrow-up fs-2 text-success"></i>
+                                                +45%
+                                            </div>
+                                            <div class="badge badge-lg badge-light-primary fw-bold p-4">
+                                                <i class="ki-outline ki-dollar fs-2 text-primary"></i>
+                                                Budget
+                                            </div>
+                                            <div class="badge badge-lg badge-light-info fw-bold p-4">
+                                                <i class="ki-outline ki-chart-simple fs-2 text-info"></i>
+                                                Analytics
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="features">
-        <div class="container">
-            <div class="section-title">
-                <h2>Características Principales</h2>
-                <p>Todo lo que necesitas para gestionar eficientemente tus proyectos de adaptación climática</p>
+    <section class="landing-features" id="caracteristicas">
+        <div class="container-xxl">
+            <div class="section-header reveal">
+                <span class="section-badge">
+                    <i class="ki-outline ki-star fs-6"></i>
+                    Características
+                </span>
+                <h2 class="section-title">Todo lo que Necesitas en Una Sola Plataforma</h2>
+                <p class="section-description">
+                    Herramientas poderosas diseñadas para maximizar el impacto de tus proyectos de adaptación climática
+                </p>
             </div>
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon blue">
+
+            <div class="row g-5 g-xl-10">
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feature-card" style="--card-color: #7239EA; --card-bg: rgba(114, 57, 234, 0.1);">
+                        <div class="feature-icon-wrapper">
                             <i class="ki-outline ki-chart-line-up"></i>
                         </div>
-                        <h3>Registro de Acciones</h3>
-                        <p>Registra y documenta todas las acciones de adaptación de manera estructurada y organizada.</p>
+                        <h3>Registro Inteligente</h3>
+                        <p>Sistema completo de registro y documentación de acciones con formularios inteligentes y validación automática de datos.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon green">
+
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feature-card" style="--card-color: #50CD89; --card-bg: rgba(80, 205, 137, 0.1);">
+                        <div class="feature-icon-wrapper">
                             <i class="ki-outline ki-dollar"></i>
                         </div>
-                        <h3>Control Presupuestario</h3>
-                        <p>Gestiona presupuestos planificados y ejecutados con análisis detallados y proyecciones.</p>
+                        <h3>Gestión Presupuestaria</h3>
+                        <p>Control total de presupuestos planificados y ejecutados con análisis de burn rate, proyecciones y alertas tempranas.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon orange">
+
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feature-card" style="--card-color: #FFC700; --card-bg: rgba(255, 199, 0, 0.1);">
+                        <div class="feature-icon-wrapper">
                             <i class="ki-outline ki-abstract-26"></i>
                         </div>
                         <h3>Indicadores Personalizados</h3>
-                        <p>Define y monitorea indicadores con fórmulas personalizadas para medir el impacto real.</p>
+                        <p>Define indicadores con fórmulas personalizadas, variables dinámicas y seguimiento automático de metas y resultados.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon purple">
+
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feature-card" style="--card-color: #3E97FF; --card-bg: rgba(62, 151, 255, 0.1);">
+                        <div class="feature-icon-wrapper">
                             <i class="ki-outline ki-chart-simple"></i>
                         </div>
-                        <h3>Análisis y Reportes</h3>
-                        <p>Genera reportes ejecutivos, estadísticos y comparativos con visualizaciones interactivas.</p>
+                        <h3>Reportes Avanzados</h3>
+                        <p>Genera reportes ejecutivos, estadísticos y comparativos con gráficos profesionales exportables a PDF y Excel.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon teal">
+
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feature-card" style="--card-color: #F1416C; --card-bg: rgba(241, 65, 108, 0.1);">
+                        <div class="feature-icon-wrapper">
                             <i class="ki-outline ki-geolocation"></i>
                         </div>
-                        <h3>Visualización Geográfica</h3>
-                        <p>Mapas interactivos para visualizar la distribución territorial de las acciones.</p>
+                        <h3>Mapas Interactivos</h3>
+                        <p>Visualiza la distribución territorial de acciones con mapas interactivos, filtros por tipo y análisis geoespacial.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon red">
+
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feature-card" style="--card-color: #00A3FF; --card-bg: rgba(0, 163, 255, 0.1);">
+                        <div class="feature-icon-wrapper">
                             <i class="ki-outline ki-notification-on"></i>
                         </div>
-                        <h3>Notificaciones Inteligentes</h3>
-                        <p>Sistema de alertas automáticas para fechas límite y eventos importantes del proyecto.</p>
+                        <h3>Notificaciones Smart</h3>
+                        <p>Sistema inteligente de alertas automáticas para fechas límite, eventos importantes y actualizaciones del proyecto.</p>
                     </div>
                 </div>
             </div>
@@ -619,31 +807,35 @@
     </section>
 
     <!-- Stats Section -->
-    <section class="stats">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
+    <section class="landing-stats">
+        <div class="container-xxl">
+            <div class="row g-5">
+                <div class="col-6 col-lg-3 reveal">
+                    <div class="stat-card">
                         <span class="stat-number">100%</span>
-                        <span class="stat-label">Seguro y Confiable</span>
+                        <div class="stat-label">Confiable</div>
+                        <div class="stat-description">Sistema probado y seguro</div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
+                <div class="col-6 col-lg-3 reveal">
+                    <div class="stat-card">
                         <span class="stat-number">24/7</span>
-                        <span class="stat-label">Disponibilidad</span>
+                        <div class="stat-label">Disponible</div>
+                        <div class="stat-description">Acceso sin interrupciones</div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
+                <div class="col-6 col-lg-3 reveal">
+                    <div class="stat-card">
                         <span class="stat-number">∞</span>
-                        <span class="stat-label">Proyectos</span>
+                        <div class="stat-label">Proyectos</div>
+                        <div class="stat-description">Sin límites de escala</div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
+                <div class="col-6 col-lg-3 reveal">
+                    <div class="stat-card">
                         <span class="stat-number">AI</span>
-                        <span class="stat-label">Análisis Inteligente</span>
+                        <div class="stat-label">Inteligente</div>
+                        <div class="stat-description">Análisis con IA avanzada</div>
                     </div>
                 </div>
             </div>
@@ -651,68 +843,88 @@
     </section>
 
     <!-- Benefits Section -->
-    <section id="benefits" class="benefits">
-        <div class="container">
-            <div class="section-title">
-                <h2>Beneficios de Usar Readapt</h2>
-                <p>Optimiza la gestión de tus proyectos de adaptación climática</p>
+    <section class="landing-benefits" id="beneficios">
+        <div class="container-xxl">
+            <div class="section-header reveal">
+                <span class="section-badge">
+                    <i class="ki-outline ki-like fs-6"></i>
+                    Beneficios
+                </span>
+                <h2 class="section-title">¿Por Qué Elegir Readapt?</h2>
+                <p class="section-description">
+                    Ventajas competitivas que transformarán la gestión de tus proyectos
+                </p>
             </div>
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="benefit-item">
+
+            <div class="row g-5">
+                <div class="col-lg-6 reveal">
+                    <div class="benefit-card">
                         <div class="benefit-icon">
                             <i class="ki-outline ki-shield-tick"></i>
                         </div>
                         <div class="benefit-content">
-                            <h4>Trazabilidad Completa</h4>
-                            <p>Seguimiento detallado de cada acción desde su planificación hasta su ejecución y resultados.</p>
+                            <h4>Trazabilidad Total</h4>
+                            <p>Seguimiento completo desde la planificación hasta los resultados finales. Auditoría integrada y registro histórico de todos los cambios.</p>
                         </div>
                     </div>
-                    <div class="benefit-item">
+                </div>
+
+                <div class="col-lg-6 reveal">
+                    <div class="benefit-card">
                         <div class="benefit-icon">
                             <i class="ki-outline ki-rocket"></i>
                         </div>
                         <div class="benefit-content">
-                            <h4>Decisiones Basadas en Datos</h4>
-                            <p>Análisis estadísticos avanzados y visualizaciones que facilitan la toma de decisiones estratégicas.</p>
+                            <h4>Decisiones Data-Driven</h4>
+                            <p>Análisis estadísticos avanzados, visualizaciones interactivas y dashboards personalizables para decisiones informadas.</p>
                         </div>
                     </div>
-                    <div class="benefit-item">
+                </div>
+
+                <div class="col-lg-6 reveal">
+                    <div class="benefit-card">
                         <div class="benefit-icon">
                             <i class="ki-outline ki-timer"></i>
                         </div>
                         <div class="benefit-content">
-                            <h4>Ahorro de Tiempo</h4>
-                            <p>Automatización de cálculos, reportes y notificaciones para maximizar la eficiencia operativa.</p>
+                            <h4>Máxima Eficiencia</h4>
+                            <p>Automatización de cálculos, reportes y notificaciones. Reduce el tiempo administrativo hasta en un 70%.</p>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6">
-                    <div class="benefit-item">
+
+                <div class="col-lg-6 reveal">
+                    <div class="benefit-card">
                         <div class="benefit-icon">
                             <i class="ki-outline ki-people"></i>
                         </div>
                         <div class="benefit-content">
                             <h4>Colaboración Efectiva</h4>
-                            <p>Plataforma multiusuario con roles y permisos para trabajar en equipo de manera organizada.</p>
+                            <p>Plataforma multiusuario con roles, permisos granulares y flujos de trabajo colaborativos en tiempo real.</p>
                         </div>
                     </div>
-                    <div class="benefit-item">
+                </div>
+
+                <div class="col-lg-6 reveal">
+                    <div class="benefit-card">
                         <div class="benefit-icon">
                             <i class="ki-outline ki-file-up"></i>
                         </div>
                         <div class="benefit-content">
                             <h4>Reportes Profesionales</h4>
-                            <p>Exportación de reportes en PDF y Excel con gráficos profesionales listos para presentar.</p>
+                            <p>Exportación a PDF y Excel con diseño profesional, gráficos de alta calidad listos para presentaciones ejecutivas.</p>
                         </div>
                     </div>
-                    <div class="benefit-item">
+                </div>
+
+                <div class="col-lg-6 reveal">
+                    <div class="benefit-card">
                         <div class="benefit-icon">
-                            <i class="ki-outline ki-technology-2"></i>
+                            <i class="ki-outline ki-abstract-14"></i>
                         </div>
                         <div class="benefit-content">
                             <h4>Tecnología de Vanguardia</h4>
-                            <p>Interfaz moderna, intuitiva y responsive que funciona en cualquier dispositivo.</p>
+                            <p>Interfaz moderna, responsive y accesible. Compatible con todos los dispositivos y navegadores modernos.</p>
                         </div>
                     </div>
                 </div>
@@ -721,82 +933,114 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="cta">
-        <div class="container">
-            <div class="cta-content">
-                <h2>¿Listo para Comenzar?</h2>
-                <p>Únete a la plataforma líder en gestión de acciones de adaptación al cambio climático</p>
-                <a href="{% url 'account_signup' %}" class="btn-white">Crear Cuenta Gratis</a>
+    <section class="landing-cta">
+        <div class="container-xxl">
+            <div class="cta-content reveal">
+                <h2>Comienza tu Transformación Digital Hoy</h2>
+                <p>Únete a la plataforma líder en gestión de acciones de adaptación al cambio climático. Sin tarjetas de crédito, sin compromisos.</p>
+                <a href="{% url 'account_signup' %}" class="btn btn-landing-white">
+                    Crear Cuenta Gratuita
+                    <i class="ki-outline ki-arrow-right fs-3 ms-2"></i>
+                </a>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-4 mb-4 mb-lg-0">
-                    <h5>Readapt</h5>
-                    <p>Sistema integral de registro y seguimiento de acciones de adaptación al cambio climático.</p>
+    <footer class="landing-footer">
+        <div class="container-xxl">
+            <div class="row g-5 g-xl-10">
+                <div class="col-lg-4 footer-section">
+                    <div class="d-flex align-items-center gap-3 mb-5">
+                        <img src="{% static 'assets/media/logos/custom-1.png' %}" alt="Readapt" height="40">
+                        <h5 class="mb-0 text-white">Readapt</h5>
+                    </div>
+                    <p>Sistema integral de registro y seguimiento de acciones de adaptación al cambio climático con tecnología de vanguardia.</p>
+                    <div class="social-links mt-5">
+                        <a href="#" class="social-link">
+                            <i class="ki-outline ki-facebook fs-2"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="ki-outline ki-twitter fs-2"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="ki-outline ki-instagram fs-2"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="ki-outline ki-youtube fs-2"></i>
+                        </a>
+                    </div>
                 </div>
-                <div class="col-lg-2 col-6 mb-4 mb-lg-0">
+
+                <div class="col-lg-2 col-6 footer-section">
                     <h5>Producto</h5>
                     <ul class="footer-links">
-                        <li><a href="#features">Características</a></li>
-                        <li><a href="#benefits">Beneficios</a></li>
+                        <li><a href="#caracteristicas">Características</a></li>
+                        <li><a href="#beneficios">Beneficios</a></li>
                         <li><a href="{% url 'account_signup' %}">Registrarse</a></li>
+                        <li><a href="#">Precios</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-2 col-6 mb-4 mb-lg-0">
-                    <h5>Soporte</h5>
+
+                <div class="col-lg-2 col-6 footer-section">
+                    <h5>Recursos</h5>
                     <ul class="footer-links">
                         <li><a href="#">Documentación</a></li>
-                        <li><a href="#">Centro de Ayuda</a></li>
-                        <li><a href="#">Contacto</a></li>
+                        <li><a href="#">Tutoriales</a></li>
+                        <li><a href="#">API</a></li>
+                        <li><a href="#">Blog</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-2 col-6 mb-4 mb-lg-0">
+
+                <div class="col-lg-2 col-6 footer-section">
+                    <h5>Soporte</h5>
+                    <ul class="footer-links">
+                        <li><a href="#">Centro de Ayuda</a></li>
+                        <li><a href="#">Contacto</a></li>
+                        <li><a href="#">Chat en Vivo</a></li>
+                        <li><a href="#">Estado del Sistema</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-2 col-6 footer-section">
                     <h5>Legal</h5>
                     <ul class="footer-links">
                         <li><a href="#">Privacidad</a></li>
                         <li><a href="#">Términos</a></li>
                         <li><a href="#">Cookies</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-2 col-6 mb-4 mb-lg-0">
-                    <h5>Acceso</h5>
-                    <ul class="footer-links">
-                        <li><a href="{% url 'account_login' %}">Iniciar Sesión</a></li>
-                        <li><a href="{% url 'account_signup' %}">Crear Cuenta</a></li>
+                        <li><a href="#">Licencia</a></li>
                     </ul>
                 </div>
             </div>
+
             <div class="footer-bottom">
-                <p>2025 &copy; Readapt - Desarrollado por Ing. Rodolfo García Maeso</p>
+                <p class="mb-0">2025 © Readapt - Desarrollado con ❤️ por <strong>Ing. Rodolfo García Maeso</strong></p>
             </div>
         </div>
     </footer>
 
     <!-- Scripts -->
     <script src="{% static 'assets/plugins/global/plugins.bundle.js' %}"></script>
+    <script src="{% static 'assets/js/scripts.bundle.js' %}"></script>
+
     <script>
         // Navbar scroll effect
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('.navbar');
+        const header = document.getElementById('landing-header');
+        window.addEventListener('scroll', () => {
             if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
+                header.classList.add('scrolled');
             } else {
-                navbar.classList.remove('scrolled');
+                header.classList.remove('scrolled');
             }
         });
 
-        // Smooth scroll for anchor links
+        // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
-                    const offset = 80;
+                    const offset = 100;
                     const targetPosition = target.offsetTop - offset;
                     window.scrollTo({
                         top: targetPosition,
@@ -805,6 +1049,33 @@
                 }
             });
         });
+
+        // Scroll reveal animation
+        const reveals = document.querySelectorAll('.reveal');
+
+        const revealOnScroll = () => {
+            const windowHeight = window.innerHeight;
+            const revealPoint = 100;
+
+            reveals.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+
+                if (elementTop < windowHeight - revealPoint) {
+                    element.classList.add('active');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealOnScroll);
+        revealOnScroll(); // Initial check
+
+        // Pulse animation for badge
+        const pulse = document.querySelector('.pulse');
+        if (pulse) {
+            setInterval(() => {
+                pulse.classList.add('pulse-primary');
+            }, 2000);
+        }
     </script>
 </body>
 </html>
